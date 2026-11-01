@@ -73,6 +73,9 @@ Si apagas la API (`docker compose stop api`), el chat dice "El tutor no está di
 | Apagar | `docker compose down` |
 | Borrar también la base y los modelos | `docker compose down -v` |
 | Pruebas del backend | `cd backend && pip install -r requirements-dev.txt && pytest` |
+| Pruebas con la base real | en PowerShell: `$env:TEST_DATABASE_URL="postgresql://tutor:<tu contraseña>@localhost:5432/tutor"; pytest` |
+| Entrar a la base | `docker compose exec db psql -U tutor -d tutor` |
+| Recrear la base (aplica los SQL de `infra/db`) | `docker compose down -v` y luego `docker compose up -d` (borra los datos) |
 | Compilar el frontend | `cd frontend && npm run build` |
 
 ### Problemas frecuentes
@@ -82,6 +85,7 @@ Si apagas la API (`docker compose stop api`), el chat dice "El tutor no está di
 | `required variable POSTGRES_PASSWORD is missing` | Falta el archivo `.env` en la raíz (paso 2) |
 | El puerto 5432 está ocupado | Tienes otro PostgreSQL instalado: detenlo o cambia el puerto en `docker-compose.yml` |
 | `/salud` dice `degradado` | Mira `docker compose ps` y `docker compose logs db ollama` |
+| No aparecen las tablas nuevas | Los SQL de `infra/db` solo corren al crear la base: `docker compose down -v` y `docker compose up -d` |
 
 ## Cómo se trabaja
 

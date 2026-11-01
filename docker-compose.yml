@@ -21,7 +21,10 @@ services:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       retries: 10
-    networks: [interna]
+    # Docker no publica puertos de contenedores que solo están en una red interna.
+    # En local la base también va en "descarga" para poder entrar desde la PC (pruebas, psql).
+    # En el servidor (Fase 6) se quita el puerto y la red "descarga": la base queda solo en "interna".
+    networks: [interna, descarga]
 
   ollama:
     image: ollama/ollama:0.34.3

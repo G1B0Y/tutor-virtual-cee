@@ -41,18 +41,23 @@ infra/               más adelante: Nginx, systemd y respaldos (Fase 6)
 docs/                ROADMAP, PROYECTO, ARQUITECTURA, BITACORA, referencia/
 ```
 
-## Modelo de datos (borrador)
+## Modelo de datos
 
-| Tabla | Campos principales | Notas |
+Una sola base: PostgreSQL 18 + pgvector. SQL en `infra/db/002_base_conocimiento.sql` (01/11/2026).
+
+| Tabla | Campos principales | Reglas |
 | --- | --- | --- |
-| `documentos` | id, titulo, curso, tipo (separata, temario, manual, faq), creado_en | Un documento lógico |
-| `versiones_documento` | id, documento_id, version, archivo, hash, vigente_desde, estado (vigente / retirado) | Al cargar una nueva, la anterior pasa a retirado |
-| `fragmentos` | id, version_id, pagina, orden, texto, embedding `vector(n)` | `n` según el modelo de embeddings elegido; índice HNSW coseno |
-| `faqs` | id, pregunta, respuesta, fuente, activa, embedding `vector(n)` | Respuesta directa sin LLM |
-| `consultas_pendientes` | id, pregunta, motivo (sin_evidencia, fuera_de_alcance, error), contacto opcional, creada_en, atendida | Mínimos datos; retención por definir |
-| `eventos` | id, tipo, estado, ms_total, ms_primer_token, modelo, creado_en | Sin texto de la pregunta ni datos personales |
+| `documentos` | id, titulo, curso, tipo (temario, separata, presentacion, manual, reglamento, otro), creado_en | Un documento lógico |
+| `versiones_documento` | id, documento_id, version, archivo, hash_sha256, paginas, vigente_desde, estado (vigente / retirado), cargado_en, retirado_en | **Una sola vigente por documento** (índice único parcial). `retirado_en` obligatorio si está retirada |
+| `fragmentos` | id, version_id, orden, pagina, texto, embedding `vector(384)` | Índice HNSW coseno. Se borran con su versión |
+| `faqs` | id, pregunta, respuesta, fuente, activa, embedding `vector(384)` | Respuesta directa sin LLM. Índice HNSW coseno |
+| `consultas_pendientes` | id, pregunta (≤ 1000), motivo (sin_evidencia, fuera_de_alcance, error, pedido_del_alumno), contacto opcional (≤ 200), creada_en, atendida_en, nota_atencion | Mínimos datos; retención por definir con TI |
+| `eventos` | id, tipo (consulta, ingesta, error, salud), estado, ms_total, ms_primer_token, modelo, creado_en | Sin texto de la pregunta ni datos personales |
 
-La búsqueda filtra siempre por `versiones_documento.estado = 'vigente'`.
+- **Vista `fragmentos_vigentes`:** fragmentos de versiones vigentes con título, curso y tipo del documento. **El RAG busca solo aquí**, así nunca responde con material retirado.
+- **Función `registrar_version(documento, archivo, hash, paginas)`:** en una sola transacción retira la versión vigente y crea la siguiente (número correlativo). Rechaza volver a cargar el mismo archivo si ya es el vigente.
+- **Dimensión 384:** la de los dos modelos de embeddings candidatos. Si el benchmark elige otro con otra dimensión, se cambia el SQL y se recalculan los embeddings.
+- Búsqueda: `ORDER BY embedding <=> :pregunta LIMIT 5` (distancia coseno: 0 = idéntico).
 
 ## Entornos
 

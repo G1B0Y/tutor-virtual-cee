@@ -11,7 +11,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 | Fase | Fechas | Contenido | Entregable que se revisa | Estado |
 | --- | --- | --- | --- | --- |
 | 0. Preparación | 01–02/11 | Repo, documentos base, esqueleto y entorno local con Docker | `docker compose up` levanta PostgreSQL + pgvector y Ollama; la API responde `/salud` | ✅ |
-| 1. Base de conocimiento | 02–05/11 | Modelo de datos, script de ingesta de PDFs y FAQs, vigencia y retiro | Cargar un corpus de prueba y ver documentos, versiones y fragmentos en la base | ⬜ |
+| 1. Base de conocimiento | 02–05/11 | Modelo de datos, script de ingesta de PDFs y FAQs, vigencia y retiro | Cargar un corpus de prueba y ver documentos, versiones y fragmentos en la base | 🟨 |
 | 2. RAG y benchmark | 04–08/11 | Búsqueda por similitud, umbral de rechazo, set de 30 preguntas, comparación de 2 embeddings y 2 LLM | Informe de benchmark: recall@5, aciertos con fuente, rechazos, tiempos y RAM | ⬜ |
 | 3. API | 06–10/11 | FastAPI: consulta, salud, consultas no resueltas, cola de 1 generación, límites y registro | API documentada en `/docs` (OpenAPI) y probada con pytest | ⬜ |
 | 4. Chat (widget) | 08–12/11 | React + TS + Vite: chat, fuentes, "no encontrado", ocupado, aviso de asistente; campus simulado | El chat funciona embebido en una página que simula el campus, en PC y celular | ⬜ |
@@ -40,10 +40,10 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 1 – Base de conocimiento (02–05/11) · RF-M05
 
-- [ ] Migraciones del modelo de datos (ver `docs/ARQUITECTURA.md`): documentos, versiones, fragmentos con embedding, FAQs, consultas no resueltas, eventos técnicos.
+- [x] Migraciones del modelo de datos (ver `docs/ARQUITECTURA.md`): documentos, versiones, fragmentos con embedding, FAQs, consultas no resueltas, eventos técnicos. Con 6 pruebas de integración (01/11).
 - [ ] Script `ingesta`: PDF con texto → extracción por página → fragmentos (~500 tokens con solapamiento) → embeddings locales → pgvector.
-- [ ] Metadatos por documento: curso, versión, fecha de vigencia y estado (vigente / retirado).
-- [ ] Reemplazar un documento retira del índice la versión anterior.
+- [x] Metadatos por documento: curso, versión, fecha de vigencia y estado (vigente / retirado) — en la base; falta que el script los pida.
+- [x] Reemplazar un documento retira del índice la versión anterior (`registrar_version` + vista `fragmentos_vigentes`).
 - [ ] Carga de FAQs desde un CSV/Excel (pregunta, respuesta, fuente).
 - [ ] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
 - [ ] Corpus de prueba mientras el CEE entrega el real (temarios y separatas de ejemplo, marcados como "PRUEBA").

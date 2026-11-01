@@ -32,9 +32,21 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  compose:
+  base-de-datos:
+    # Levanta la base del docker-compose (con los SQL de infra/db) y corre las pruebas de integración.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: cp .env.example .env
       - run: docker compose config --quiet
+      - run: docker compose up -d --wait db
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r backend/requirements-dev.txt
+      - working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql://tutor:cambia-esta-contrasena@localhost:5432/tutor
+        run: pytest -q -rs
+      - if: failure()
+        run: docker compose logs db
