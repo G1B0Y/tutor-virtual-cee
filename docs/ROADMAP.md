@@ -56,7 +56,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Umbral de relevancia: por debajo, el bot se abstiene y orienta al canal humano (valor inicial 0.55; se calibra con el set de preguntas).
 - [x] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
 - [x] Respuesta con fuente: nombre del documento y página.
-- [ ] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (en la nube de desarrollo no se pueden descargar).
+- [x] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (01/11: 7 preguntas; ver bitácora). Falta repetir con los arreglos del prompt.
 - [ ] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus, 10 fuera de alcance (trámites, matrícula, temas ajenos).
 - [ ] Benchmark reproducible: **≥2 modelos de embeddings** y **≥2 LLM**; medir recall@5, aciertos con fuente, rechazos correctos, tiempo al primer token, tiempo total y RAM.
 - [ ] Elegir modelos y fijar sus versiones; verificar licencias en la ficha oficial (RNF-23).
