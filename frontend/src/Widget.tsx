@@ -31,7 +31,8 @@ export function Widget() {
       {abierto && (
         <section className="tutor-panel" role="dialog" aria-label="Tutor Virtual del CEE">
           <header className="tutor-cabecera">
-            <div>
+            <img className="tutor-avatar" src="/marca/cee-simbolo.png" alt="" />
+            <div className="tutor-titulo">
               <strong>Tutor Virtual CEE</strong>
               <span className={`tutor-estado tutor-estado--${conexion}`}>{TEXTO_CONEXION[conexion]}</span>
             </div>
@@ -60,7 +61,7 @@ export function Widget() {
         aria-expanded={abierto}
         aria-label={abierto ? "Cerrar el tutor virtual" : "Abrir el tutor virtual"}
       >
-        {abierto ? "×" : "?"}
+        {abierto ? "×" : <img src="/marca/cee-simbolo.png" alt="" />}
       </button>
     </div>
   );

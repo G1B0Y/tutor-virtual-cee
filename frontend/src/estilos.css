@@ -1,6 +1,9 @@
 :root {
-  --marino: #12305a;
-  --acento: #1f6feb;
+  /* Colores del Centro de Especialización Ejecutiva (logo) */
+  --cee-rojo: #870c0e;
+  --cee-rojo-oscuro: #6a090b;
+  --cee-negro: #141414;
+  --cee-gris: #747273;
   --fondo: #f4f6f9;
   --texto: #1b1f24;
   --suave: #5b6573;
@@ -11,26 +14,35 @@
 body { margin: 0; background: var(--fondo); }
 
 /* Campus simulado */
-.campus-cabecera { display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px; background: var(--marino); color: #fff; }
+.campus-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 16px; background: var(--cee-negro); color: #fff; }
+.campus-marca { display: flex; align-items: center; gap: 10px; }
+.campus-marca img { width: 36px; height: 36px; border-radius: 6px; }
 .campus-usuario { opacity: 0.8; font-size: 14px; }
 .campus-contenido { max-width: 760px; margin: 0 auto; padding: 16px; }
 
 /* Widget del tutor */
 .tutor { position: fixed; right: 16px; bottom: 16px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-.tutor-boton { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--acento); color: #fff; font-size: 24px; cursor: pointer; box-shadow: 0 4px 14px rgb(0 0 0 / 0.2); }
+.tutor-boton { width: 60px; height: 60px; padding: 0; border-radius: 50%; border: 0; overflow: hidden; background: var(--cee-rojo); color: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 4px 14px rgb(0 0 0 / 0.25); }
+.tutor-boton { display: grid; place-items: center; }
+.tutor-boton img { width: 76%; height: 76%; display: block; }
+.tutor-boton:hover { background: var(--cee-rojo-oscuro); }
 .tutor-boton:focus-visible, .tutor-cerrar:focus-visible { outline: 3px solid #ffbf47; outline-offset: 2px; }
 .tutor-panel { width: min(380px, calc(100vw - 32px)); height: min(560px, calc(100vh - 110px)); display: flex; flex-direction: column; background: #fff; border-radius: 14px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.18); overflow: hidden; }
-.tutor-cabecera { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--marino); color: #fff; }
-.tutor-cabecera div { display: flex; flex-direction: column; gap: 2px; }
+.tutor-cabecera { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--cee-rojo); color: #fff; }
+.tutor-avatar { width: 38px; height: 38px; padding: 5px; box-sizing: border-box; border-radius: 50%; background: var(--cee-rojo-oscuro); border: 1px solid rgb(255 255 255 / 0.6); }
+.tutor-titulo { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .tutor-estado { font-size: 12px; opacity: 0.9; }
-.tutor-estado--sin-conexion { color: #ffb4a8; }
-.tutor-estado--degradado { color: #ffd479; }
+.tutor-estado::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #c9c9c9; }
+.tutor-estado--disponible::before { background: #4ade80; }
+.tutor-estado--degradado::before { background: #fbbf24; }
+.tutor-estado--sin-conexion::before { background: #f1f1f1; }
 .tutor-cerrar { background: none; border: 0; color: #fff; font-size: 24px; cursor: pointer; }
 .tutor-mensajes { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
 .tutor-mensaje { margin: 0; padding: 10px 12px; border-radius: 12px; max-width: 85%; line-height: 1.4; }
-.tutor-mensaje--bot { background: #eef2f7; align-self: flex-start; }
+.tutor-mensaje--bot { background: #f3eeee; border-left: 3px solid var(--cee-rojo); align-self: flex-start; }
 .tutor-aviso { margin: 0; padding: 6px 14px; font-size: 12px; color: var(--suave); border-top: 1px solid #e6e9ee; }
 .tutor-entrada { display: flex; gap: 8px; padding: 10px 14px 14px; }
-.tutor-entrada input { flex: 1; min-width: 0; padding: 10px; border: 1px solid #cfd6df; border-radius: 8px; font: inherit; }
-.tutor-entrada button { padding: 10px 14px; border: 0; border-radius: 8px; background: var(--acento); color: #fff; font: inherit; }
+.tutor-entrada input { flex: 1; min-width: 0; padding: 10px; border: 1px solid #d4d0d0; border-radius: 8px; font: inherit; }
+.tutor-entrada input:focus-visible { outline: 2px solid var(--cee-rojo); outline-offset: 1px; }
+.tutor-entrada button { padding: 10px 14px; border: 0; border-radius: 8px; background: var(--cee-rojo); color: #fff; font: inherit; }
 .tutor-entrada button:disabled, .tutor-entrada input:disabled { opacity: 0.6; }

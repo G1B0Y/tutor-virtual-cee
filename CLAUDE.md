@@ -75,6 +75,8 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 - Cloudflare Tunnel eliminado; acceso por red interna o subdominio institucional existente.
 - **01/11/2026:** se desarrolla en la PC de Alfredo hasta PC3; luego se ensaya en una VM igual al equipo del CEE (4 vCPU, 8 GB, sin GPU) y recién después en el CEE.
 - **01/11/2026:** mientras el Grupo 3 no defina la integración, el chat se prueba dentro de un **campus simulado** con un token de sesión de prueba.
+- **01/11/2026:** el Grupo 5 hace solo el tutor (widget + backend); el Campus Virtual es del Grupo 3.
+- **01/11/2026 (logo enviado por Alfredo):** el chat lleva la marca del CEE: rojo `#870c0e` (cabecera, botón, Enviar), negro `#141414` y gris `#747273`; el símbolo "C" del logo en el botón flotante y en la cabecera. Logos originales en `docs/referencia/marca/`.
 
 ## Notas para desarrollar
 
@@ -89,3 +91,4 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 - `infra/db/*.sql` solo corre al crear el volumen por primera vez; para repetirlo: `docker compose down -v`.
 - `/salud` siempre responde 200 si la API vive; `estado: degradado` cuando falla la base u Ollama (el chat lo usa para avisar).
 - En la nube de desarrollo de Claude, `docker build` necesita el certificado del proxy: la imagen de la API se construye aparte con `--network host` y `PIP_CERT`, y se levanta con `docker compose up -d --no-build`. En la PC del usuario no hace falta.
+- Marca: `frontend/public/marca/cee-simbolo.png` (192 px, recortado del logo de fondo rojo, solo la "C" sin texto). Colores como variables `--cee-*` en `frontend/src/estilos.css`; usar esas variables, no colores sueltos.
