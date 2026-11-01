@@ -12,9 +12,9 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 | --- | --- | --- | --- | --- |
 | 0. Preparación | 01–02/11 | Repo, documentos base, esqueleto y entorno local con Docker | `docker compose up` levanta PostgreSQL + pgvector y Ollama; la API responde `/salud` | ✅ |
 | 1. Base de conocimiento | 02–05/11 | Modelo de datos, script de ingesta de PDFs y FAQs, vigencia y retiro | Cargar un corpus de prueba y ver documentos, versiones y fragmentos en la base | 🟨 |
-| 2. RAG y benchmark | 04–08/11 | Búsqueda por similitud, umbral de rechazo, set de 30 preguntas, comparación de 2 embeddings y 2 LLM | Informe de benchmark: recall@5, aciertos con fuente, rechazos, tiempos y RAM | ⬜ |
-| 3. API | 06–10/11 | FastAPI: consulta, salud, consultas no resueltas, cola de 1 generación, límites y registro | API documentada en `/docs` (OpenAPI) y probada con pytest | ⬜ |
-| 4. Chat (widget) | 08–12/11 | React + TS + Vite: chat, fuentes, "no encontrado", ocupado, aviso de asistente; campus simulado | El chat funciona embebido en una página que simula el campus, en PC y celular | ⬜ |
+| 2. RAG y benchmark | 04–08/11 | Búsqueda por similitud, umbral de rechazo, set de 30 preguntas, comparación de 2 embeddings y 2 LLM | Informe de benchmark: recall@5, aciertos con fuente, rechazos, tiempos y RAM | 🟨 |
+| 3. API | 06–10/11 | FastAPI: consulta, salud, consultas no resueltas, cola de 1 generación, límites y registro | API documentada en `/docs` (OpenAPI) y probada con pytest | 🟨 |
+| 4. Chat (widget) | 08–12/11 | React + TS + Vite: chat, fuentes, "no encontrado", ocupado, aviso de asistente; campus simulado | El chat funciona embebido en una página que simula el campus, en PC y celular | 🟨 |
 | 5. Pruebas y ensayo PC3 | 12–16/11 | Set de preguntas, fuera de alcance, prompt injection, Ollama caído, concurrencia 1/3/5/9 | Informe de pruebas y demo ensayada | ⬜ |
 | **Hito PC3** | **17/11** | Demo del MVP al ingeniero | MVP v1.0 aprobado o lista de observaciones | ⬜ |
 | 6. Correcciones y servidor simulado | 18–22/11 | Observaciones de PC3; VM Ubuntu Server 24.04 con 4 vCPU y 8 GB, Nginx + TLS, systemd | MVP v1.1 corriendo en la VM y reiniciándose solo | ⬜ |
@@ -41,21 +41,22 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 ### Fase 1 – Base de conocimiento (02–05/11) · RF-M05
 
 - [x] Migraciones del modelo de datos (ver `docs/ARQUITECTURA.md`): documentos, versiones, fragmentos con embedding, FAQs, consultas no resueltas, eventos técnicos. Con 6 pruebas de integración (01/11).
-- [ ] Script `ingesta`: PDF con texto → extracción por página → fragmentos (~500 tokens con solapamiento) → embeddings locales → pgvector.
-- [x] Metadatos por documento: curso, versión, fecha de vigencia y estado (vigente / retirado) — en la base; falta que el script los pida.
+- [x] Script `ingesta` (`python -m app.ingesta`): PDF con texto → extracción por página → fragmentos (~900 caracteres, solape de 1 oración) → embeddings locales → pgvector (01/11).
+- [x] Metadatos por documento: curso, versión, fecha de vigencia y estado (vigente / retirado) — en la base y en `corpus.json` / opciones del script.
 - [x] Reemplazar un documento retira del índice la versión anterior (`registrar_version` + vista `fragmentos_vigentes`).
-- [ ] Carga de FAQs desde un CSV/Excel (pregunta, respuesta, fuente).
-- [ ] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
-- [ ] Corpus de prueba mientras el CEE entrega el real (temarios y separatas de ejemplo, marcados como "PRUEBA").
+- [x] Carga de FAQs desde un CSV (pregunta, respuesta, fuente). Excel queda para después si el CEE lo prefiere.
+- [x] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
+- [x] Corpus de prueba mientras el CEE entrega el real: 4 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11). Falta llegar a 5+ PDF y probar el reemplazo con un archivo real.
 
 **Listo cuando:** se cargan 5+ PDFs y un CSV de FAQs, se reemplaza uno y la base solo deja vigente la versión nueva.
 
 ### Fase 2 – RAG y benchmark (04–08/11) · RF-M02, RF-M03, RNF-M03, RNF-M04
 
-- [ ] Búsqueda por similitud en pgvector (top-k = 5) con índice HNSW.
-- [ ] Umbral de relevancia: por debajo, el bot se abstiene y orienta al canal humano.
-- [ ] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
-- [ ] Respuesta con fuente: nombre del documento y página.
+- [x] Búsqueda por similitud en pgvector con índice HNSW (top-k = 4 por ahora, configurable).
+- [x] Umbral de relevancia: por debajo, el bot se abstiene y orienta al canal humano (valor inicial 0.55; se calibra con el set de preguntas).
+- [x] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
+- [x] Respuesta con fuente: nombre del documento y página.
+- [ ] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (en la nube de desarrollo no se pueden descargar).
 - [ ] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus, 10 fuera de alcance (trámites, matrícula, temas ajenos).
 - [ ] Benchmark reproducible: **≥2 modelos de embeddings** y **≥2 LLM**; medir recall@5, aciertos con fuente, rechazos correctos, tiempo al primer token, tiempo total y RAM.
 - [ ] Elegir modelos y fijar sus versiones; verificar licencias en la ficha oficial (RNF-23).
@@ -64,25 +65,25 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 3 – API (06–10/11) · RF-M04, RF-M06, RF-M07, RNF-M02, RNF-M05
 
-- [ ] `POST /consulta` (pregunta + id de conversación) → respuesta, fuentes y estado (`respondida`, `sin_evidencia`, `fuera_de_alcance`, `ocupado`).
-- [ ] `GET /salud` (API, base y Ollama).
+- [x] `POST /consulta` → respuesta, fuentes y estado (`respondida`, `faq`, `sin_evidencia`, `sin_llm`, `ocupado`). Falta el id de conversación y el token de sesión.
+- [x] `GET /salud` (API, base y Ollama; avisa si falta descargar el modelo).
 - [ ] `POST /consultas-pendientes` para dejar una consulta a atención diferida (mínimos datos) y listado para el CEE (protegido).
-- [ ] Cola con **una generación activa**, cola corta, timeout y aviso de "sistema ocupado".
+- [x] Cola con **una generación activa**, cola de 3, timeout y aviso de "sistema ocupado".
 - [ ] Límite de solicitudes por usuario y por minuto.
-- [ ] FAQs sin LLM cuando la pregunta coincide con una FAQ o cuando Ollama está caído.
-- [ ] Registro de errores, tiempos y eventos sin datos sensibles.
-- [ ] Validación de entradas (longitud y formato) con Pydantic; pruebas con pytest.
+- [x] FAQs sin LLM cuando la pregunta coincide con una FAQ; con Ollama caído, el fragmento más cercano con su fuente.
+- [x] Registro de tiempos y estado de cada consulta en `eventos`, sin el texto de la pregunta. Falta el registro de errores.
+- [x] Validación de entradas (2 a 500 caracteres) con Pydantic; pruebas con pytest.
 
 **Listo cuando:** la documentación OpenAPI está completa y las pruebas pasan, incluida la de Ollama apagado.
 
 ### Fase 4 – Chat (08–12/11) · RF-M01, RNF-13, RNF-24 a 26
 
-- [ ] Widget de chat en React + TypeScript + Vite, embebible (botón flotante que abre el panel).
-- [ ] Mensajes con fuentes, estado "no encontré información" con el canal humano, "sistema ocupado" y error claro si el bot no responde.
-- [ ] Aviso visible: "asistente automatizado, puede equivocarse".
+- [x] Widget de chat en React + TypeScript + Vite (botón flotante que abre el panel). Falta empaquetarlo para embeberlo en otra página.
+- [x] Mensajes con fuentes, estado "no encontré información" con el canal humano, "sistema ocupado" y error claro si el bot no responde.
+- [x] Aviso visible: "asistente automatizado, puede equivocarse".
 - [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible.
 - [ ] **Campus simulado:** página HTML que embebe el widget y le pasa un token de sesión de prueba, hasta que el Grupo 3 defina la integración real.
-- [ ] Si la API cae, el campus simulado sigue funcionando (RNF-03).
+- [x] Si la API cae, el campus simulado sigue funcionando (RNF-03).
 
 **Listo cuando:** se conversa desde el celular por la red local y desde la PC, dentro del campus simulado.
 
