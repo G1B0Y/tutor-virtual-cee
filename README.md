@@ -114,7 +114,8 @@ La primera respuesta del modelo tarda más (lo carga en memoria); en CPU cuenta 
 | --- | --- |
 | `required variable POSTGRES_PASSWORD is missing` | Falta el archivo `.env` en la raíz (paso 2) |
 | `no configuration file provided: not found` | Estás en otra carpeta (por ejemplo `frontend`) o en una rama sin el código: vuelve a la raíz del proyecto y revisa `git branch` |
-| El puerto 5432 está ocupado | Tienes otro PostgreSQL instalado: detenlo o cambia el puerto en `docker-compose.yml` |
+| `ports are not available ... 11434` | Tienes Ollama instalado en Windows: ciérralo (ícono junto al reloj → Quit Ollama) o pon `PUERTO_OLLAMA=11435` en `.env` |
+| `ports are not available ... 5432` | Tienes otro PostgreSQL instalado: detenlo o pon `PUERTO_DB=5433` en `.env` (y usa ese puerto en `TEST_DATABASE_URL`) |
 | `/salud` dice `degradado` | Mira `docker compose ps` y `docker compose logs db ollama`; si dice "falta descargar el modelo", haz el paso 4 |
 | El bot siempre dice "No encontré esa información" | No cargaste los documentos (paso 5): revisa con `python -m app.ingesta estado` |
 | El bot responde con un fragmento y no redacta | Ollama no responde o falta el modelo (paso 4) |
