@@ -31,12 +31,14 @@ Todo corre en contenedores con Docker Compose. Solo Nginx se publica; PostgreSQL
 ## Estructura del repositorio
 
 ```
-backend/        FastAPI: app/, rag/, api/, tests/
-ingesta/        script de carga de PDFs y FAQs
-benchmark/      set de preguntas, scripts y resultados
-frontend/       widget React + TS + Vite y campus simulado
-infra/          docker-compose.yml, Nginx, systemd, scripts de respaldo
-docs/           CLAUDE.md complementa: ROADMAP, PROYECTO, ARQUITECTURA, BITACORA, referencia/
+docker-compose.yml   PostgreSQL + pgvector, Ollama y API (entorno local)
+backend/             FastAPI: app/ (config, salud; luego rag/ y api/), tests/
+ingesta/             script de carga de PDFs y FAQs (Fase 1)
+benchmark/           set de preguntas, scripts y resultados (Fase 2)
+frontend/            widget React + TS + Vite; index.html = campus simulado
+infra/db/            SQL inicial de la base (extensión pgvector; migraciones desde la Fase 1)
+infra/               más adelante: Nginx, systemd y respaldos (Fase 6)
+docs/                ROADMAP, PROYECTO, ARQUITECTURA, BITACORA, referencia/
 ```
 
 ## Modelo de datos (borrador)

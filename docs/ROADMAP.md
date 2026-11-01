@@ -10,7 +10,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 | Fase | Fechas | Contenido | Entregable que se revisa | Estado |
 | --- | --- | --- | --- | --- |
-| 0. Preparación | 01–02/11 | Repo, documentos base, esqueleto y entorno local con Docker | `docker compose up` levanta PostgreSQL + pgvector y Ollama; la API responde `/salud` | 🟨 |
+| 0. Preparación | 01–02/11 | Repo, documentos base, esqueleto y entorno local con Docker | `docker compose up` levanta PostgreSQL + pgvector y Ollama; la API responde `/salud` | ✅ |
 | 1. Base de conocimiento | 02–05/11 | Modelo de datos, script de ingesta de PDFs y FAQs, vigencia y retiro | Cargar un corpus de prueba y ver documentos, versiones y fragmentos en la base | ⬜ |
 | 2. RAG y benchmark | 04–08/11 | Búsqueda por similitud, umbral de rechazo, set de 30 preguntas, comparación de 2 embeddings y 2 LLM | Informe de benchmark: recall@5, aciertos con fuente, rechazos, tiempos y RAM | ⬜ |
 | 3. API | 06–10/11 | FastAPI: consulta, salud, consultas no resueltas, cola de 1 generación, límites y registro | API documentada en `/docs` (OpenAPI) y probada con pytest | ⬜ |
@@ -30,10 +30,11 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] `CLAUDE.md`, `docs/ROADMAP.md`, `docs/PROYECTO_TUTOR_VIRTUAL.md`, `docs/ARQUITECTURA.md`, `docs/BITACORA.md`, `README.md`.
 - [x] Documentos originales en `docs/referencia/`.
 - [x] Crear el repo privado (G1B0Y/tutor-virtual-cee) y subir todo lo anterior.
-- [ ] Esqueleto: `backend/` (FastAPI), `frontend/` (React + TS + Vite), `ingesta/`, `benchmark/`, `infra/`.
-- [ ] `docker-compose.yml` local: PostgreSQL + pgvector, Ollama, API. Ollama sin puerto publicado hacia afuera y sin salida a internet en producción.
-- [ ] Descargar los modelos candidatos en Ollama y los de embeddings.
-- [ ] README con la instalación en Windows (Docker Desktop + WSL2, Python, Node).
+- [x] Esqueleto: `backend/` (FastAPI con `/salud`), `frontend/` (widget + campus simulado), `infra/db/`. `ingesta/` y `benchmark/` se crean en sus fases.
+- [x] `docker-compose.yml` local: PostgreSQL 18 + pgvector 0.8.6, Ollama 0.34.3, API. Puertos solo en 127.0.0.1; base y Ollama en una red interna.
+- [ ] Descargar los modelos candidatos en Ollama y los de embeddings (pasa a la Fase 2).
+- [x] README con la instalación en Windows (Docker Desktop + WSL2, Python, Node).
+- [x] CI en GitHub Actions: pruebas del backend, build del frontend y validación del compose.
 
 **Listo cuando:** en la PC de Alfredo, `docker compose up` levanta todo y `GET /salud` responde `ok` con el estado de la base y de Ollama.
 

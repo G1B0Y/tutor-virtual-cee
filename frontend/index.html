@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus simulado – CEE FIIS-UNI</title>
+  </head>
+  <body>
+    <!--
+      Campus simulado: reemplaza al Campus Virtual del Grupo 3 mientras se acuerda la integración.
+      El widget del tutor se monta en #tutor-virtual; el resto de la página debe seguir
+      funcionando aunque la API del tutor esté caída (RNF-03).
+    -->
+    <header class="campus-cabecera">
+      <strong>Campus Virtual CEE</strong>
+      <span class="campus-usuario">alumno.prueba@cee.test</span>
+    </header>
+    <main class="campus-contenido">
+      <h1>Mis cursos</h1>
+      <ul>
+        <li>Gestión de la Cadena de Suministro</li>
+        <li>Lean Six Sigma Green Belt</li>
+        <li>Gestión de Proyectos con PMBOK</li>
+      </ul>
+      <p>Página de prueba. Los cursos son de ejemplo.</p>
+    </main>
+    <div id="tutor-virtual"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

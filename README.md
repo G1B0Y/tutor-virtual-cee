@@ -13,21 +13,75 @@ React + TypeScript + Vite · Python + FastAPI · PostgreSQL + pgvector · Senten
 
 ## Entorno local (tu PC)
 
-> En construcción (Fase 0). Se completa al crear el esqueleto y el `docker-compose.yml`.
+### 1. Instalar una sola vez
 
-### Instalar una sola vez
-
-- Docker Desktop (con WSL2 en Windows)
-- Python 3.12
-- Node.js LTS
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (en Windows, con WSL2 activado)
+- [Node.js](https://nodejs.org/) 22 LTS
+- Python 3.12 (solo para correr las pruebas del backend fuera de Docker)
 - Git
 
-### Levantar
+### 2. Preparar el proyecto
 
 ```bash
-cp .env.example .env
-docker compose -f infra/docker-compose.yml up -d
+git clone https://github.com/G1B0Y/tutor-virtual-cee.git
+cd tutor-virtual-cee
+cp .env.example .env              # en PowerShell: Copy-Item .env.example .env
+cp frontend/.env.example frontend/.env
 ```
+
+Abre `.env` y cambia `POSTGRES_PASSWORD`.
+
+### 3. Levantar la base, Ollama y la API
+
+```bash
+docker compose up -d --build
+```
+
+La primera vez descarga las imágenes (unos minutos). Comprueba que todo responde:
+
+- http://localhost:8000/salud → `"estado": "ok"` con pgvector y Ollama.
+- http://localhost:8000/docs → documentación de la API (OpenAPI).
+
+Todo queda publicado solo en `127.0.0.1`: nadie de tu red puede entrar a la base ni a Ollama.
+
+### 4. Descargar un modelo en Ollama (para probar)
+
+```bash
+docker compose exec ollama ollama pull qwen2.5:1.5b
+```
+
+El modelo definitivo se elige en el benchmark (Fase 2).
+
+### 5. Abrir el chat dentro del campus simulado
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+npm run dev:red      # para abrirlo desde el celular en la misma red
+```
+
+Si apagas la API (`docker compose stop api`), el chat dice "El tutor no está disponible" y el campus sigue funcionando.
+
+### Comandos
+
+| Qué | Comando |
+| --- | --- |
+| Levantar todo | `docker compose up -d --build` |
+| Ver estado | `docker compose ps` |
+| Ver registros de la API | `docker compose logs -f api` |
+| Apagar | `docker compose down` |
+| Borrar también la base y los modelos | `docker compose down -v` |
+| Pruebas del backend | `cd backend && pip install -r requirements-dev.txt && pytest` |
+| Compilar el frontend | `cd frontend && npm run build` |
+
+### Problemas frecuentes
+
+| Problema | Solución |
+| --- | --- |
+| `required variable POSTGRES_PASSWORD is missing` | Falta el archivo `.env` en la raíz (paso 2) |
+| El puerto 5432 está ocupado | Tienes otro PostgreSQL instalado: detenlo o cambia el puerto en `docker-compose.yml` |
+| `/salud` dice `degradado` | Mira `docker compose ps` y `docker compose logs db ollama` |
 
 ## Cómo se trabaja
 

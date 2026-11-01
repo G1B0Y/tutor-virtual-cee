@@ -1,0 +1,64 @@
+# Entorno local del Tutor Virtual (Fase 0).
+# Uso (desde la raíz del repo, con el archivo .env creado):  docker compose up -d
+# Los puertos se publican solo en 127.0.0.1: nada queda abierto a la red.
+
+name: tutor-virtual
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tutor}
+      POSTGRES_USER: ${POSTGRES_USER:-tutor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    volumes:
+      - datos_db:/var/lib/postgresql
+      - ./infra/db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+    networks: [interna]
+
+  ollama:
+    image: ollama/ollama:0.34.3
+    restart: unless-stopped
+    environment:
+      # Un solo modelo cargado y una generación a la vez (RNF-M02, RNF-M03).
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+    volumes:
+      - modelos_ollama:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    # En local Ollama necesita la red "descarga" para bajar los modelos.
+    # En el servidor (Fase 6) se quita esa red: Ollama queda sin salida a internet (RNF-20).
+    networks: [interna, descarga]
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tutor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tutor}
+      OLLAMA_URL: http://ollama:11434
+      ORIGENES_PERMITIDOS: ${ORIGENES_PERMITIDOS:-["http://localhost:5173"]}
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks: [interna, descarga]
+
+volumes:
+  datos_db:
+  modelos_ollama:
+
+networks:
+  interna:
+    internal: true
+  descarga:
