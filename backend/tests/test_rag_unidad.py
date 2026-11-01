@@ -62,3 +62,12 @@ def test_turno_rechaza_cuando_la_cola_esta_llena():
     turno.liberar()
     assert turno.tomar()
     turno.liberar()
+
+
+def test_pdf_se_versionan_como_binarios():
+    """En Windows, Git convertía los saltos de línea de los PDF de prueba y pypdf avisaba
+    "incorrect startxref pointer" (01/11/2026). .gitattributes debe marcarlos como binarios."""
+    from pathlib import Path
+
+    reglas = (Path(__file__).resolve().parents[2] / ".gitattributes").read_text(encoding="utf-8").split("\n")
+    assert "*.pdf binary" in [r.strip() for r in reglas]

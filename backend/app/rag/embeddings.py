@@ -22,7 +22,9 @@ class EmbeddingsSentenceTransformers:
 
         self.nombre = nombre
         self.modelo = SentenceTransformer(nombre, device="cpu")
-        dimension = self.modelo.get_sentence_embedding_dimension()
+        # sentence-transformers renombró el método; se acepta el nombre nuevo y el anterior.
+        obtener_dimension = getattr(self.modelo, "get_embedding_dimension", None) or self.modelo.get_sentence_embedding_dimension
+        dimension = obtener_dimension()
         if dimension != DIMENSION:
             raise ValueError(f"El modelo {nombre} da vectores de {dimension}; la base espera {DIMENSION}")
         # Los modelos E5 necesitan prefijos distintos para preguntas y para pasajes.
