@@ -38,3 +38,29 @@ def test_salud_degradado_sin_servicios_reales():
     assert cuerpo["estado"] == "degradado"
     assert cuerpo["servicios"]["base"]["estado"] == "error"
     assert cuerpo["servicios"]["ollama"]["estado"] == "error"
+
+
+def test_consulta_rechaza_preguntas_vacias_o_muy_largas():
+    from app.main import obtener_conexion, obtener_embeddings
+
+    app.dependency_overrides[obtener_conexion] = lambda: None
+    app.dependency_overrides[obtener_embeddings] = lambda: None
+    try:
+        assert cliente.post("/consulta", json={"pregunta": ""}).status_code == 422
+        assert cliente.post("/consulta", json={"pregunta": "x" * 501}).status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_ollama_sin_el_modelo_descargado_cuenta_como_falla(monkeypatch):
+    class RespuestaFalsa:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"models": [{"name": "otro:1b"}]}
+
+    monkeypatch.setattr(salud.httpx, "get", lambda *a, **k: RespuestaFalsa())
+    resultado = salud.revisar_ollama(Configuracion(llm_modelo="qwen2.5:1.5b"))
+    assert resultado["estado"] == "error"
+    assert "qwen2.5:1.5b" in resultado["detalle"]
