@@ -43,7 +43,7 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 
 ## Estado
 
-- **01/11/2026:** documentación del zip revisada (resumen y contradicciones en https://claude.ai/artifact/WAMTQ1e8uDt3MGEoSwouqc). Roadmap y documentos base escritos y subidos al repo `G1B0Y/tutor-virtual-cee`. **Fase 0 hecha (01/11/2026):** `docker compose up -d --build` levanta PostgreSQL 18 + pgvector, Ollama y la API; `GET /salud` revisa la base y Ollama (3 pruebas con pytest). Widget React dentro del campus simulado (`frontend/`, `npm run dev`) que muestra si el tutor está disponible; probado con la API apagada. CI en GitHub Actions. **Siguiente: Fase 1** (modelo de datos e ingesta).
+- **01/11/2026:** documentación del zip revisada (resumen y contradicciones en https://claude.ai/artifact/WAMTQ1e8uDt3MGEoSwouqc). Roadmap y documentos base escritos y subidos al repo `G1B0Y/tutor-virtual-cee`. **Fase 0 hecha (01/11/2026):** `docker compose up -d --build` levanta PostgreSQL 18 + pgvector, Ollama y la API; `GET /salud` revisa la base y Ollama (3 pruebas con pytest). Widget React dentro del campus simulado (`frontend/`, `npm run dev`) que muestra si el tutor está disponible; probado con la API apagada. CI en GitHub Actions. **Fase 1 en curso:** tablas creadas (01/11/2026, `infra/db/002_base_conocimiento.sql`: documentos, versiones, fragmentos, FAQs, consultas pendientes, eventos; vista `fragmentos_vigentes`; función `registrar_version`) con 6 pruebas de integración. Falta el script de ingesta y el corpus.
 - Según el Gantt original, el benchmark (12–25/10) y el RAG (19/10–01/11) ya deberían estar hechos, pero no hay resultados ni código: el roadmap los reprograma para 04–08/11.
 
 ## Pendientes
@@ -88,7 +88,10 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 - Versiones fijadas (01/11/2026): FastAPI 0.162.0, Uvicorn 0.54.0, psycopg 3.3.6, pydantic-settings 2.16.2, pytest 9.2.0; imagen de la API `python:3.12-slim`; `pgvector/pgvector:0.8.6-pg18`; `ollama/ollama:0.34.3`; React 19.3.1, Vite 8.3.4, TypeScript 7.0.2. Al actualizar, elegir versiones con al menos dos semanas de publicadas.
 - `docker-compose.yml` está en la raíz y lee `.env` solo. Ollama corre con `OLLAMA_NUM_PARALLEL=1` y `OLLAMA_MAX_LOADED_MODELS=1`. La red `interna` es `internal: true`; Ollama y la API también están en `descarga` solo para el entorno local (Ollama baja modelos). En el servidor se quita `descarga` de Ollama.
 - PostgreSQL 18 guarda los datos en `/var/lib/postgresql` (no en `/var/lib/postgresql/data` como las versiones anteriores).
-- `infra/db/*.sql` solo corre al crear el volumen por primera vez; para repetirlo: `docker compose down -v`.
+- `infra/db/*.sql` solo corre al crear el volumen por primera vez; para repetirlo: `docker compose down -v`. Mientras no haya datos reales está bien; antes de cargar el corpus real hay que pasar a migraciones que se apliquen sobre una base existente.
+- Docker **no publica puertos** de un contenedor que solo está en una red `internal: true`: por eso en local la base también va en la red `descarga` (si no, el 5432 no responde desde la PC). En el servidor se quita.
+- Pruebas de integración: `backend/tests/integracion/` (se saltan si no hay `TEST_DATABASE_URL`; cada prueba en una transacción que se deshace). El CI levanta la base con `docker compose up -d --wait db` y las corre.
+- Embeddings de 384 dimensiones (`vector(384)`) por los dos modelos candidatos.
 - `/salud` siempre responde 200 si la API vive; `estado: degradado` cuando falla la base u Ollama (el chat lo usa para avisar).
 - En la nube de desarrollo de Claude, `docker build` necesita el certificado del proxy: la imagen de la API se construye aparte con `--network host` y `PIP_CERT`, y se levanta con `docker compose up -d --no-build`. En la PC del usuario no hace falta.
 - Marca: `frontend/public/marca/cee-simbolo.png` (192 px, recortado del logo de fondo rojo, solo la "C" sin texto). Colores como variables `--cee-*` en `frontend/src/estilos.css`; usar esas variables, no colores sueltos.
