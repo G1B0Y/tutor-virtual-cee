@@ -23,6 +23,15 @@ class LLMOllama:
         self.nombre = modelo
         self.timeout = timeout
 
+    def precargar(self, timeout: float = 600.0) -> bool:
+        """Carga el modelo en memoria sin generar nada. La primera carga puede tardar minutos en CPU;
+        así la primera pregunta del día no se pasa del timeout. Devuelve False si no se pudo."""
+        try:
+            respuesta = httpx.post(f"{self.url}/api/generate", json={"model": self.nombre}, timeout=timeout)
+            return respuesta.status_code == 200
+        except httpx.HTTPError:
+            return False
+
     def generar(self, mensajes: list[dict[str, str]]) -> str:
         try:
             respuesta = httpx.post(

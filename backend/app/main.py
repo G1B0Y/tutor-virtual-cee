@@ -1,5 +1,8 @@
 """API del Tutor Virtual 24/7 del CEE FIIS-UNI."""
 
+import logging
+import threading
+from contextlib import asynccontextmanager
 from functools import lru_cache
 
 import psycopg
@@ -13,7 +16,28 @@ from app.rag.embeddings import Embeddings, crear_embeddings
 from app.rag.llm import LLM, LLMOllama
 from app.salud import resumen_salud
 
+registro = logging.getLogger("tutor")
+
+
+def precargar_modelo(llm: LLMOllama) -> None:
+    if llm.precargar():
+        registro.info("Modelo %s cargado en memoria", llm.nombre)
+    else:
+        registro.warning("No se pudo precargar %s: la primera pregunta tardará más", llm.nombre)
+
+
+@asynccontextmanager
+async def ciclo_de_vida(_app: FastAPI):
+    config = obtener_configuracion()
+    if config.precargar_llm:
+        # En segundo plano: la API ya responde /salud mientras Ollama carga el modelo.
+        llm = LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm)
+        threading.Thread(target=precargar_modelo, args=(llm,), daemon=True).start()
+    yield
+
+
 app = FastAPI(
+    lifespan=ciclo_de_vida,
     title="Tutor Virtual 24/7 – CEE FIIS-UNI",
     description="API del tutor: consulta RAG local, salud y consultas pendientes.",
     version="0.2.0",
