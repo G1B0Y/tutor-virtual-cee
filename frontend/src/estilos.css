@@ -38,8 +38,15 @@ body { margin: 0; background: var(--fondo); }
 .tutor-estado--sin-conexion::before { background: #f1f1f1; }
 .tutor-cerrar { background: none; border: 0; color: #fff; font-size: 24px; cursor: pointer; }
 .tutor-mensajes { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
-.tutor-mensaje { margin: 0; padding: 10px 12px; border-radius: 12px; max-width: 85%; line-height: 1.4; }
+.tutor-mensaje { padding: 10px 12px; border-radius: 12px; max-width: 85%; line-height: 1.4; }
+.tutor-mensaje p { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .tutor-mensaje--bot { background: #f3eeee; border-left: 3px solid var(--cee-rojo); align-self: flex-start; }
+.tutor-mensaje--alumno { background: var(--cee-negro); color: #fff; align-self: flex-end; }
+.tutor-mensaje--sin_evidencia, .tutor-mensaje--sin_llm, .tutor-mensaje--ocupado { border-left-color: #b7791f; background: #fbf5ea; }
+.tutor-mensaje--error { border-left-color: var(--cee-gris); background: #f1f1f1; }
+.tutor-pensando { color: var(--suave); font-style: italic; }
+.tutor-fuentes { margin-top: 8px; padding-top: 6px; border-top: 1px solid #e3d9d9; font-size: 12px; color: var(--suave); }
+.tutor-fuentes ul { margin: 2px 0 0; padding-left: 16px; }
 .tutor-aviso { margin: 0; padding: 6px 14px; font-size: 12px; color: var(--suave); border-top: 1px solid #e6e9ee; }
 .tutor-entrada { display: flex; gap: 8px; padding: 10px 14px 14px; }
 .tutor-entrada input { flex: 1; min-width: 0; padding: 10px; border: 1px solid #d4d0d0; border-radius: 8px; font: inherit; }

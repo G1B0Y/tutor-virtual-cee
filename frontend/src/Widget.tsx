@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { consultarSalud } from "./api";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { consultar, consultarSalud, LARGO_MAXIMO_PREGUNTA, type EstadoRespuesta, type Fuente } from "./api";
 
 type Conexion = "revisando" | "disponible" | "degradado" | "sin-conexion";
 
@@ -10,9 +10,30 @@ const TEXTO_CONEXION: Record<Conexion, string> = {
   "sin-conexion": "El tutor no está disponible en este momento",
 };
 
+type Mensaje =
+  | { id: number; de: "alumno"; texto: string }
+  | { id: number; de: "bot"; texto: string; estado?: EstadoRespuesta | "error"; fuentes?: Fuente[] };
+
+type MensajeNuevo = Mensaje extends infer M ? (M extends Mensaje ? Omit<M, "id"> : never) : never;
+
+const BIENVENIDA: Mensaje = {
+  id: 0,
+  de: "bot",
+  texto: "Hola, soy el tutor virtual del CEE. Pregúntame sobre tus cursos: temarios, módulos, separatas o el reglamento.",
+};
+
+function textoFuente(f: Fuente): string {
+  return f.pagina ? `${f.titulo}, pág. ${f.pagina}` : f.titulo;
+}
+
 export function Widget() {
   const [abierto, setAbierto] = useState(false);
   const [conexion, setConexion] = useState<Conexion>("revisando");
+  const [mensajes, setMensajes] = useState<Mensaje[]>([BIENVENIDA]);
+  const [pregunta, setPregunta] = useState("");
+  const [pensando, setPensando] = useState(false);
+  const siguienteId = useRef(1);
+  const finDeMensajes = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!abierto) return;
@@ -25,6 +46,34 @@ export function Widget() {
       });
     return () => control.abort();
   }, [abierto]);
+
+  useEffect(() => {
+    finDeMensajes.current?.scrollIntoView?.({ block: "end" });
+  }, [mensajes, pensando]);
+
+  const agregar = (m: MensajeNuevo) =>
+    setMensajes((actuales) => [...actuales, { ...m, id: siguienteId.current++ } as Mensaje]);
+
+  async function enviar(e: FormEvent) {
+    e.preventDefault();
+    const texto = pregunta.trim();
+    if (texto.length < 2 || pensando) return;
+    agregar({ de: "alumno", texto });
+    setPregunta("");
+    setPensando(true);
+    try {
+      const r = await consultar(texto);
+      agregar({ de: "bot", texto: r.respuesta, estado: r.estado, fuentes: r.fuentes });
+      setConexion("disponible");
+    } catch {
+      agregar({ de: "bot", estado: "error", texto: "No pude conectarme con el tutor. Intenta de nuevo en unos minutos." });
+      setConexion("sin-conexion");
+    } finally {
+      setPensando(false);
+    }
+  }
+
+  const deshabilitado = conexion === "sin-conexion" || pensando;
 
   return (
     <div className="tutor">
@@ -40,15 +89,40 @@ export function Widget() {
               ×
             </button>
           </header>
-          <div className="tutor-mensajes">
-            <p className="tutor-mensaje tutor-mensaje--bot">
-              Hola, soy el tutor virtual del CEE. Respondo con los materiales validados de tus cursos.
-            </p>
+          <div className="tutor-mensajes" aria-live="polite">
+            {mensajes.map((m) => (
+              <div
+                key={m.id}
+                className={`tutor-mensaje tutor-mensaje--${m.de}${m.de === "bot" && m.estado ? ` tutor-mensaje--${m.estado}` : ""}`}
+              >
+                <p>{m.texto}</p>
+                {m.de === "bot" && m.fuentes && m.fuentes.length > 0 && (
+                  <div className="tutor-fuentes">
+                    <span>Fuentes:</span>
+                    <ul>
+                      {m.fuentes.map((f) => (
+                        <li key={textoFuente(f)}>{textoFuente(f)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+            {pensando && <div className="tutor-mensaje tutor-mensaje--bot tutor-pensando">Buscando en los materiales del CEE…</div>}
+            <div ref={finDeMensajes} />
           </div>
           <p className="tutor-aviso">Asistente automatizado: puede equivocarse. Revisa siempre las fuentes.</p>
-          <form className="tutor-entrada" onSubmit={(e) => e.preventDefault()}>
-            <input type="text" placeholder="Muy pronto podrás preguntar" disabled aria-label="Tu pregunta" />
-            <button type="submit" disabled>
+          <form className="tutor-entrada" onSubmit={enviar}>
+            <input
+              type="text"
+              value={pregunta}
+              onChange={(e) => setPregunta(e.target.value)}
+              maxLength={LARGO_MAXIMO_PREGUNTA}
+              placeholder={conexion === "sin-conexion" ? "El tutor no está disponible" : "Escribe tu pregunta"}
+              disabled={deshabilitado}
+              aria-label="Tu pregunta"
+            />
+            <button type="submit" disabled={deshabilitado || pregunta.trim().length < 2}>
               Enviar
             </button>
           </form>
