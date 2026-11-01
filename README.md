@@ -113,6 +113,7 @@ La primera respuesta del modelo tarda más (lo carga en memoria); en CPU cuenta 
 | Problema | Solución |
 | --- | --- |
 | `required variable POSTGRES_PASSWORD is missing` | Falta el archivo `.env` en la raíz (paso 2) |
+| `no configuration file provided: not found` | Estás en otra carpeta (por ejemplo `frontend`) o en una rama sin el código: vuelve a la raíz del proyecto y revisa `git branch` |
 | El puerto 5432 está ocupado | Tienes otro PostgreSQL instalado: detenlo o cambia el puerto en `docker-compose.yml` |
 | `/salud` dice `degradado` | Mira `docker compose ps` y `docker compose logs db ollama`; si dice "falta descargar el modelo", haz el paso 4 |
 | El bot siempre dice "No encontré esa información" | No cargaste los documentos (paso 5): revisa con `python -m app.ingesta estado` |
