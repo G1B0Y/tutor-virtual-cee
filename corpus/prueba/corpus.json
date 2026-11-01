@@ -1,0 +1,10 @@
+{
+  "descripcion": "Corpus de PRUEBA con contenido ficticio. Se reemplaza por los documentos validados del CEE.",
+  "documentos": [
+    {"archivo": "temario_gestion_cadena_suministro.pdf", "titulo": "Temario – Gestión de la Cadena de Suministro (PRUEBA)", "curso": "Gestión de la Cadena de Suministro", "tipo": "temario"},
+    {"archivo": "separata_gestion_inventarios.pdf", "titulo": "Separata del Módulo 3 – Gestión de Inventarios (PRUEBA)", "curso": "Gestión de la Cadena de Suministro", "tipo": "separata"},
+    {"archivo": "temario_lean_six_sigma.pdf", "titulo": "Temario – Lean Six Sigma Green Belt (PRUEBA)", "curso": "Lean Six Sigma Green Belt", "tipo": "temario"},
+    {"archivo": "reglamento_academico_cee.pdf", "titulo": "Reglamento Académico del CEE – extracto (PRUEBA)", "curso": null, "tipo": "reglamento"}
+  ],
+  "faqs": "faqs.csv"
+}
