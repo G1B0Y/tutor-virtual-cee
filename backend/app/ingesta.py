@@ -39,6 +39,9 @@ def cargar_documento(conexion: psycopg.Connection, emb: Embeddings, ruta: Path, 
         raise ErrorDeIngesta(f"{ruta.name}: no tiene texto que se pueda leer (¿es un PDF escaneado?). No se cargó.")
 
     with conexion.transaction():
+        # Candado por título hasta el fin de la transacción: si dos ingestas corren a la vez,
+        # la segunda espera y ve el documento de la primera en vez de crear otro (01/11/2026).
+        conexion.execute("SELECT pg_advisory_xact_lock(hashtext('ingesta:' || %s))", (titulo,))
         fila = conexion.execute("SELECT id FROM documentos WHERE titulo = %s", (titulo,)).fetchone()
         if fila:
             documento_id = fila[0]
