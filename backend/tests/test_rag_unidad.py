@@ -71,3 +71,63 @@ def test_pdf_se_versionan_como_binarios():
 
     reglas = (Path(__file__).resolve().parents[2] / ".gitattributes").read_text(encoding="utf-8").split("\n")
     assert "*.pdf binary" in [r.strip() for r in reglas]
+
+
+def test_limpiar_respuesta_quita_latex():
+    """qwen2.5:1.5b escribió la fórmula del EOQ en LaTeX y el chat la mostraba cruda (01/11/2026)."""
+    from app.rag.prompt import limpiar_respuesta
+
+    texto = r"El EOQ es \[ EOQ = \sqrt{\frac{2 \times D \times S}{H}} \] y da \(\approx 949\) unidades."
+    limpio = limpiar_respuesta(texto)
+    assert "\\" not in limpio
+    assert "√" in limpio and "×" in limpio and "≈ 949" in limpio
+
+
+def test_limpiar_respuesta_no_toca_texto_normal():
+    from app.rag.prompt import limpiar_respuesta
+
+    assert limpiar_respuesta("La nota mínima es 14 (sobre 20).") == "La nota mínima es 14 (sobre 20)."
+
+
+def test_prompt_pide_no_agregar_nada_ni_usar_latex():
+    from app.rag.prompt import INSTRUCCIONES
+
+    assert "No agregues explicaciones" in INSTRUCCIONES
+    assert "sin LaTeX" in INSTRUCCIONES
+
+
+def test_seleccionar_cita_solo_los_fragmentos_cercanos_al_mejor():
+    """Para "¿cuántas horas dura el programa?" se citaban 4 fuentes cuando bastaba una (01/11/2026)."""
+    from app.consulta import seleccionar
+
+    def frag(titulo, distancia):
+        return FragmentoEncontrado(titulo=titulo, pagina=1, texto="x", distancia=distancia)
+
+    encontrados = [frag("Temario", 0.20), frag("Temario p2", 0.27), frag("Reglamento", 0.45), frag("Lejano", 0.70)]
+    elegidos = seleccionar(encontrados, umbral=0.55, margen=0.10)
+    assert [f.titulo for f in elegidos] == ["Temario", "Temario p2"]
+    assert seleccionar([frag("Lejano", 0.70)], umbral=0.55, margen=0.10) == []
+
+
+def test_precargar_pide_el_modelo_a_ollama_y_no_falla_si_esta_caido(monkeypatch):
+    """La primera pregunta tras arrancar se pasaba del timeout mientras Ollama cargaba el modelo (01/11/2026)."""
+    import httpx
+
+    from app.rag.llm import LLMOllama
+
+    llamadas = []
+
+    def post_ok(url, json, timeout):
+        llamadas.append((url, json))
+        return httpx.Response(200, json={"done": True})
+
+    monkeypatch.setattr(httpx, "post", post_ok)
+    llm = LLMOllama("http://ollama:11434/", "qwen2.5:1.5b", 120)
+    assert llm.precargar() is True
+    assert llamadas == [("http://ollama:11434/api/generate", {"model": "qwen2.5:1.5b"})]
+
+    def post_caido(url, json, timeout):
+        raise httpx.ConnectError("apagado")
+
+    monkeypatch.setattr(httpx, "post", post_caido)
+    assert llm.precargar() is False

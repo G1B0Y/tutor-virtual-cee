@@ -13,7 +13,7 @@ class Configuracion(BaseSettings):
     # Ollama corre en la red interna; nunca se usa un servicio en la nube.
     ollama_url: str = "http://localhost:11434"
     # Orígenes que pueden llamar a la API desde el navegador (widget y campus simulado).
-    origenes_permitidos: list[str] = ["http://localhost:5173"]
+    origenes_permitidos: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     # Segundos máximos que se espera a cada servicio en /salud.
     timeout_salud: float = 3.0
 
@@ -31,6 +31,10 @@ class Configuracion(BaseSettings):
     # Una sola generación a la vez (RNF-M02); cuántas consultas pueden esperar su turno.
     cola_maxima: int = 3
     timeout_llm: float = 120.0
+    # Cargar el modelo en memoria al arrancar la API (la primera carga en CPU puede tardar minutos).
+    precargar_llm: bool = True
+    # Fuentes: solo los fragmentos casi tan cercanos como el mejor (mejor distancia + este margen).
+    margen_fuentes: float = 0.10
     # Canal humano: lo define el CEE (pendiente). Se muestra cuando el bot no puede responder.
     mensaje_derivacion: str = (
         "Dejé registrada tu consulta para que el equipo del CEE la revise. "

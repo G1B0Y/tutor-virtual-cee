@@ -10,7 +10,7 @@ from app.config import Configuracion
 from app.rag.busqueda import FragmentoEncontrado, buscar_faq, buscar_fragmentos
 from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
-from app.rag.prompt import armar_mensajes, es_sin_evidencia
+from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta
 
 # Estados que entiende el chat.
 RESPONDIDA = "respondida"          # el LLM redactó con los documentos
@@ -61,6 +61,15 @@ def _fuentes(fragmentos: list[FragmentoEncontrado]) -> list[Fuente]:
     return vistas
 
 
+def seleccionar(encontrados: list[FragmentoEncontrado], umbral: float, margen: float) -> list[FragmentoEncontrado]:
+    """Fragmentos bajo el umbral y casi tan cercanos como el mejor: son los que se dan al modelo y se citan."""
+    utiles = [f for f in encontrados if f.distancia <= umbral]
+    if not utiles:
+        return []
+    mejor = min(f.distancia for f in utiles)
+    return [f for f in utiles if f.distancia <= mejor + margen]
+
+
 def _registrar(conexion: psycopg.Connection, r: Respuesta, pregunta: str, modelo: str | None,
                config: Configuracion) -> None:
     conexion.execute(
@@ -89,7 +98,7 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         return terminar(Respuesta(FAQ, faq.respuesta, [Fuente(faq.fuente or "Preguntas frecuentes del CEE", None)]))
 
     encontrados = buscar_fragmentos(conexion, vector, config.fragmentos_por_consulta)
-    utiles = [f for f in encontrados if f.distancia <= config.umbral_distancia]
+    utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
     if not utiles:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
                                   + config.mensaje_derivacion))
@@ -112,4 +121,4 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     if es_sin_evidencia(texto):
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
                                   + config.mensaje_derivacion), llm.nombre)
-    return terminar(Respuesta(RESPONDIDA, texto, _fuentes(utiles)), llm.nombre)
+    return terminar(Respuesta(RESPONDIDA, limpiar_respuesta(texto), _fuentes(utiles)), llm.nombre)
