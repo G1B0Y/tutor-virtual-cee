@@ -118,7 +118,7 @@ La primera respuesta del modelo tarda más (lo carga en memoria); en CPU cuenta 
 | `ports are not available ... 5432` | Tienes otro PostgreSQL instalado: detenlo o pon `PUERTO_DB=5433` en `.env` (y usa ese puerto en `TEST_DATABASE_URL`) |
 | `/salud` dice `degradado` | Mira `docker compose ps` y `docker compose logs db ollama`; si dice "falta descargar el modelo", haz el paso 4 |
 | El bot siempre dice "No encontré esa información" | No cargaste los documentos (paso 5): revisa con `python -m app.ingesta estado` |
-| El bot responde con un fragmento y no redacta | Ollama no responde o falta el modelo (paso 4) |
+| El bot responde con un fragmento y no redacta | Ollama no responde o falta el modelo (paso 4). Si `docker compose logs ollama` dice "Load failed", falta RAM: cierra programas pesados hasta tener 4 GB libres |
 | No aparecen las tablas nuevas | Los SQL de `infra/db` solo corren al crear la base: `docker compose down -v` y `docker compose up -d` |
 
 ## Cómo se trabaja
