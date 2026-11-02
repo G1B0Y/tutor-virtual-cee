@@ -131,3 +131,39 @@ def test_precargar_pide_el_modelo_a_ollama_y_no_falla_si_esta_caido(monkeypatch)
 
     monkeypatch.setattr(httpx, "post", post_caido)
     assert llm.precargar() is False
+
+
+def test_varias_consultas_al_arrancar_cargan_un_solo_modelo_de_embeddings(monkeypatch):
+    """Tres consultas simultáneas cargaron tres copias del modelo y la API quedó al 430 % de CPU (01/11/2026)."""
+    import threading
+    import time
+
+    from app.rag import embeddings
+
+    creados = []
+
+    def crear_lento(proveedor, modelo):
+        time.sleep(0.2)
+        creados.append(modelo)
+        return EmbeddingsHash()
+
+    monkeypatch.setattr(embeddings, "_crear", crear_lento)
+    monkeypatch.setattr(embeddings, "_cache", {})
+    resultados = []
+    hilos = [threading.Thread(target=lambda: resultados.append(embeddings.crear_embeddings("st", "m"))) for _ in range(5)]
+    for h in hilos:
+        h.start()
+    for h in hilos:
+        h.join()
+    assert creados == ["m"]
+    assert len({id(r) for r in resultados}) == 1
+
+
+def test_los_mensajes_informativos_de_la_api_se_ven_en_el_log():
+    """"Modelo cargado en memoria" nunca aparecía: el logger no tenía handler (01/11/2026)."""
+    import logging
+
+    from app.main import registro
+
+    assert registro.isEnabledFor(logging.INFO)
+    assert registro.handlers

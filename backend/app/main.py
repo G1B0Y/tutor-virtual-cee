@@ -17,9 +17,20 @@ from app.rag.llm import LLM, LLMOllama
 from app.salud import resumen_salud
 
 registro = logging.getLogger("tutor")
+registro.setLevel(logging.INFO)
+if not registro.handlers:  # sin handler propio, los INFO se perdían (solo salían los avisos)
+    _salida = logging.StreamHandler()
+    _salida.setFormatter(logging.Formatter("%(levelname)s:     %(message)s"))
+    registro.addHandler(_salida)
 
 
-def precargar_modelo(llm: LLMOllama) -> None:
+def precargar_modelos(config: Configuracion, llm: LLMOllama) -> None:
+    """Embeddings primero (los usa toda consulta, también las FAQ) y luego el modelo de lenguaje."""
+    try:
+        crear_embeddings(config.embeddings_proveedor, config.embeddings_modelo)
+        registro.info("Modelo de embeddings listo: %s", config.embeddings_modelo)
+    except Exception as error:  # noqa: BLE001 - la API debe arrancar igual y avisar
+        registro.warning("No se pudo cargar el modelo de embeddings: %s", error)
     if llm.precargar():
         registro.info("Modelo %s cargado en memoria", llm.nombre)
     else:
@@ -32,7 +43,7 @@ async def ciclo_de_vida(_app: FastAPI):
     if config.precargar_llm:
         # En segundo plano: la API ya responde /salud mientras Ollama carga el modelo.
         llm = LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm)
-        threading.Thread(target=precargar_modelo, args=(llm,), daemon=True).start()
+        threading.Thread(target=precargar_modelos, args=(config, llm), daemon=True).start()
     yield
 
 

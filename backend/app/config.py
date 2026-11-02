@@ -31,7 +31,8 @@ class Configuracion(BaseSettings):
     # Una sola generación a la vez (RNF-M02); cuántas consultas pueden esperar su turno.
     cola_maxima: int = 3
     timeout_llm: float = 120.0
-    # Cargar el modelo en memoria al arrancar la API (la primera carga en CPU puede tardar minutos).
+    # Al arrancar la API, cargar en segundo plano el modelo de embeddings y el de lenguaje
+    # (la primera carga en CPU puede tardar minutos).
     precargar_llm: bool = True
     # Fuentes: solo los fragmentos casi tan cercanos como el mejor (mejor distancia + este margen).
     margen_fuentes: float = 0.10

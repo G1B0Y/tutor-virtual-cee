@@ -4,7 +4,7 @@ import hashlib
 import math
 import re
 import unicodedata
-from functools import lru_cache
+import threading
 from typing import Protocol
 
 DIMENSION = 384  # Debe coincidir con vector(384) en infra/db/002_base_conocimiento.sql
@@ -60,8 +60,21 @@ class EmbeddingsHash:
         return resultado
 
 
-@lru_cache
+_cache: dict[tuple[str, str], "Embeddings"] = {}
+_candado_cache = threading.Lock()
+
+
 def crear_embeddings(proveedor: str, modelo: str) -> Embeddings:
+    """Un solo modelo por proceso. El candado evita que varias consultas que llegan juntas al arrancar
+    carguen cada una su propia copia (pasó el 01/11/2026: 3 copias a la vez y la API al 430 % de CPU)."""
+    clave = (proveedor, modelo)
+    with _candado_cache:
+        if clave not in _cache:
+            _cache[clave] = _crear(proveedor, modelo)
+        return _cache[clave]
+
+
+def _crear(proveedor: str, modelo: str) -> Embeddings:
     if proveedor == "hash":
         return EmbeddingsHash()
     if proveedor == "sentence-transformers":
