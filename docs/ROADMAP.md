@@ -46,7 +46,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Reemplazar un documento retira del índice la versión anterior (`registrar_version` + vista `fragmentos_vigentes`).
 - [x] Carga de FAQs desde un CSV (pregunta, respuesta, fuente). Excel queda para después si el CEE lo prefiere.
 - [x] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
-- [x] Corpus de prueba mientras el CEE entrega el real: 4 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11). Falta llegar a 5+ PDF y probar el reemplazo con un archivo real.
+- [x] Corpus de prueba mientras el CEE entrega el real: 6 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11; 6 PDF desde el 04/11). Falta probar el reemplazo con un archivo real.
 
 **Listo cuando:** se cargan 5+ PDFs y un CSV de FAQs, se reemplaza uno y la base solo deja vigente la versión nueva.
 
@@ -57,9 +57,10 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
 - [x] Respuesta con fuente: nombre del documento y página.
 - [x] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (01/11: 7 preguntas; ver bitácora). Falta repetir con los arreglos del prompt.
-- [ ] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus, 10 fuera de alcance (trámites, matrícula, temas ajenos).
-- [ ] Benchmark reproducible: **≥2 modelos de embeddings** y **≥2 LLM**; medir recall@5, aciertos con fuente, rechazos correctos, tiempo al primer token, tiempo total y RAM.
-- [ ] Elegir modelos y fijar sus versiones; verificar licencias en la ficha oficial (RNF-23).
+- [x] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus (3 de ellas para FAQ), 10 fuera de alcance (trámites, matrícula, temas ajenos, prompt injection) en `benchmark/preguntas.json` (04/11). Se rehace con el corpus real.
+- [x] Script del benchmark reproducible (`python -m app.benchmark`, 04/11): **2 modelos de embeddings** (MiniLM-L12 multilingüe, multilingual-e5-small) y **2 LLM** (qwen2.5:1.5b, granite3.3:2b); mide recall@1/@5, aciertos con fuente, rechazos correctos (por búsqueda y por modelo), tiempo al primer token, tiempo total (promedio y p95) y RAM; propone los umbrales de documentos y FAQs. Informe en `benchmark/resultados/`.
+- [ ] Correr el benchmark completo en la PC de Alfredo (con 4 GB de RAM libres) y guardar el informe en el repo.
+- [ ] Elegir modelos y fijar sus versiones con el informe; verificar licencias en la ficha oficial (RNF-23); copiar los umbrales propuestos a `.env.example`.
 
 **Listo cuando:** recall@5 ≥ 80 % y hay un informe con los modelos elegidos y por qué.
 

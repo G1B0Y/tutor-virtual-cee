@@ -56,6 +56,8 @@ services:
     volumes:
       # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.
       - ./corpus:/corpus:ro
+      # Set de preguntas del benchmark y carpeta donde quedan sus informes (Fase 2).
+      - ./benchmark:/benchmark
       - modelos_embeddings:/root/.cache/huggingface
     depends_on:
       db:

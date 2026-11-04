@@ -4,6 +4,8 @@
     {"archivo": "temario_gestion_cadena_suministro.pdf", "titulo": "Temario – Gestión de la Cadena de Suministro (PRUEBA)", "curso": "Gestión de la Cadena de Suministro", "tipo": "temario"},
     {"archivo": "separata_gestion_inventarios.pdf", "titulo": "Separata del Módulo 3 – Gestión de Inventarios (PRUEBA)", "curso": "Gestión de la Cadena de Suministro", "tipo": "separata"},
     {"archivo": "temario_lean_six_sigma.pdf", "titulo": "Temario – Lean Six Sigma Green Belt (PRUEBA)", "curso": "Lean Six Sigma Green Belt", "tipo": "temario"},
+    {"archivo": "separata_lean_herramientas_estadisticas.pdf", "titulo": "Separata de la Unidad 3 – Herramientas estadísticas (PRUEBA)", "curso": "Lean Six Sigma Green Belt", "tipo": "separata"},
+    {"archivo": "temario_gestion_proyectos_pmbok.pdf", "titulo": "Temario – Gestión de Proyectos con el PMBOK (PRUEBA)", "curso": "Gestión de Proyectos con el PMBOK", "tipo": "temario"},
     {"archivo": "reglamento_academico_cee.pdf", "titulo": "Reglamento Académico del CEE – extracto (PRUEBA)", "curso": null, "tipo": "reglamento"}
   ],
   "faqs": "faqs.csv"

@@ -2,6 +2,15 @@
 
 Una entrada por sesión de trabajo, de la más reciente a la más antigua. El estado actual siempre está en `CLAUDE.md` y el plan en `docs/ROADMAP.md`; aquí queda el historial.
 
+## 04/11/2026
+
+- Alfredo pidió empezar el benchmark aunque todavía no hay documentos del CEE. Se hizo con el corpus de prueba, ampliado a 6 PDF: temario de **Gestión de Proyectos con el PMBOK** (48 h, CAPM, valor ganado) y **separata de herramientas estadísticas** de Lean (Cp/Cpk, Pareto, Ishikawa 6M, gráficos de control). El generador ahora solo crea los PDF que faltan, para no cambiar los que ya están cargados.
+- **Set de 30 preguntas** (`benchmark/preguntas.json`): 20 que los documentos responden (cada una con documento, página y palabras clave esperadas; 3 deberían salir por FAQ) y 10 que el tutor debe rechazar (mundial, costo de la matrícula, profesor del curso, fecha de la próxima edición, nota del alumno, prompt injection, código en Python, política…).
+- **Script del benchmark** (`python -m app.benchmark`): por cada modelo de embeddings carga el corpus dentro de una transacción que se deshace (la base no cambia), mide recall@1/@5 y propone los umbrales de documentos y FAQs; con cada modelo de lenguaje responde las 30 preguntas como el chat y mide aciertos con fuente, rechazos (por la búsqueda o por el modelo), tiempo al primer token, tiempo total (promedio y p95) y RAM. Deja un informe en Markdown y el detalle en CSV en `benchmark/resultados/`.
+- **Candidatos:** embeddings MiniLM-L12 multilingüe (Apache 2.0) y multilingual-e5-small (MIT); LLM qwen2.5:1.5b y granite3.3:2b (Apache 2.0). Licencias a verificar en la ficha oficial antes de elegir (desde la nube de desarrollo no se puede abrir Hugging Face ni Ollama).
+- Probado en la nube de desarrollo solo con embeddings "hash" y un modelo falso: la tubería funciona y la base queda igual. Esos números no miden la calidad. 45 pruebas pasan con la base (7 nuevas).
+- **Pendiente:** que Alfredo lo corra en su PC con 4 GB de RAM libres (README, paso 7) y con el informe elegir los modelos y los umbrales.
+
 ## 03/11/2026
 
 - El Grupo 3 (Campus Virtual) compartió su documentación: Moodle 5.3 LTS sobre Windows con Apache, PHP 8.3 y PostgreSQL 18, en una sola PC del CEE/UNI; 28 de 30 requisitos sin programar; solo desarrollan el tema `theme_cee`. Proponían crear tablas nuevas que consuman las de Moodle.
