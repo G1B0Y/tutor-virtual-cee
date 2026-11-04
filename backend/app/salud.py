@@ -26,6 +26,8 @@ def revisar_ollama(config: Configuracion) -> dict:
         respuesta = httpx.get(f"{config.ollama_url}/api/tags", timeout=config.timeout_salud)
         respuesta.raise_for_status()
         modelos = [m["name"] for m in respuesta.json().get("models", [])]
+        if config.llm_modelo not in modelos:
+            return {"estado": "error", "detalle": f"falta descargar el modelo {config.llm_modelo}", "modelos": modelos}
         return {"estado": "ok", "modelos": modelos}
     except (httpx.HTTPError, ValueError, KeyError) as error:
         return {"estado": "error", "detalle": type(error).__name__}

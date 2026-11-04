@@ -28,12 +28,23 @@ Todo corre en contenedores con Docker Compose. Solo Nginx se publica; PostgreSQL
 6. Si hay evidencia → prompt con tres partes separadas (instrucciones, fragmentos, pregunta) → Ollama, con cola de una generación y timeout.
 7. Responde con el texto y las fuentes (documento y página); registra tiempos y estado.
 
+Implementado el 01/11/2026 en `backend/app/consulta.py` (sin id de conversación ni token todavía). Estados de la respuesta:
+
+| Estado | Cuándo | Qué ve el alumno |
+| --- | --- | --- |
+| `faq` | La pregunta se parece a una FAQ (distancia ≤ 0.25) | La respuesta de la FAQ, al instante |
+| `respondida` | Hay fragmentos cercanos (distancia ≤ 0.55) y el modelo contestó | Respuesta + fuentes (documento, página) |
+| `sin_evidencia` | Nada cercano, o el modelo dijo `SIN_EVIDENCIA` | "No encontré esa información" + canal humano; se guarda en `consultas_pendientes` |
+| `sin_llm` | Ollama caído o sin modelo | El fragmento más cercano con su fuente |
+| `ocupado` | Ya hay 1 generando y 3 esperando | "Hay muchas consultas en este momento. Intenta de nuevo en un minuto." |
+
 ## Estructura del repositorio
 
 ```
 docker-compose.yml   PostgreSQL + pgvector, Ollama y API (entorno local)
-backend/             FastAPI: app/ (config, salud; luego rag/ y api/), tests/
-ingesta/             script de carga de PDFs y FAQs (Fase 1)
+backend/             FastAPI: app/ (config, salud, consulta, ingesta, rag/), tests/
+corpus/prueba/       documentos y FAQs ficticios para probar (marcados "DOCUMENTO DE PRUEBA")
+scripts/             utilidades de desarrollo (generar el corpus de prueba)
 benchmark/           set de preguntas, scripts y resultados (Fase 2)
 frontend/            widget React + TS + Vite; index.html = campus simulado
 infra/db/            SQL inicial de la base (extensión pgvector; migraciones desde la Fase 1)
@@ -57,7 +68,7 @@ Una sola base: PostgreSQL 18 + pgvector. SQL en `infra/db/002_base_conocimiento.
 - **Vista `fragmentos_vigentes`:** fragmentos de versiones vigentes con título, curso y tipo del documento. **El RAG busca solo aquí**, así nunca responde con material retirado.
 - **Función `registrar_version(documento, archivo, hash, paginas)`:** en una sola transacción retira la versión vigente y crea la siguiente (número correlativo). Rechaza volver a cargar el mismo archivo si ya es el vigente.
 - **Dimensión 384:** la de los dos modelos de embeddings candidatos. Si el benchmark elige otro con otra dimensión, se cambia el SQL y se recalculan los embeddings.
-- Búsqueda: `ORDER BY embedding <=> :pregunta LIMIT 5` (distancia coseno: 0 = idéntico).
+- Búsqueda: `ORDER BY embedding <=> :pregunta LIMIT 4` (distancia coseno: 0 = idéntico, 2 = opuesto).
 
 ## Entornos
 
@@ -69,7 +80,7 @@ Una sola base: PostgreSQL 18 + pgvector. SQL en `infra/db/002_base_conocimiento.
 
 ## Decisiones pendientes
 
-- Modelos de LLM y embeddings (Fase 2).
+- Modelos de LLM y embeddings (Fase 2). Mientras tanto: `qwen2.5:1.5b` y `paraphrase-multilingual-MiniLM-L12-v2`.
 - Umbral de relevancia (Fase 2, con el set de preguntas).
 - Mecanismo de sesión con el campus (Grupo 3).
 - Sistema operativo del equipo del CEE (TI).

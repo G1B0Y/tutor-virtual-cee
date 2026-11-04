@@ -16,7 +16,7 @@ services:
       - datos_db:/var/lib/postgresql
       - ./infra/db:/docker-entrypoint-initdb.d:ro
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${PUERTO_DB:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -33,10 +33,12 @@ services:
       # Un solo modelo cargado y una generación a la vez (RNF-M02, RNF-M03).
       OLLAMA_NUM_PARALLEL: "1"
       OLLAMA_MAX_LOADED_MODELS: "1"
+      # El modelo queda en memoria aunque no haya preguntas (cargarlo en CPU puede tardar minutos).
+      OLLAMA_KEEP_ALIVE: "-1"
     volumes:
       - modelos_ollama:/root/.ollama
     ports:
-      - "127.0.0.1:11434:11434"
+      - "127.0.0.1:${PUERTO_OLLAMA:-11434}:11434"
     # En local Ollama necesita la red "descarga" para bajar los modelos.
     # En el servidor (Fase 6) se quita esa red: Ollama queda sin salida a internet (RNF-20).
     networks: [interna, descarga]
@@ -48,18 +50,26 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tutor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tutor}
       OLLAMA_URL: http://ollama:11434
       ORIGENES_PERMITIDOS: ${ORIGENES_PERMITIDOS:-["http://localhost:5173"]}
+      LLM_MODELO: ${LLM_MODELO:-qwen2.5:1.5b}
+      EMBEDDINGS_MODELO: ${EMBEDDINGS_MODELO:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      EMBEDDINGS_PROVEEDOR: ${EMBEDDINGS_PROVEEDOR:-sentence-transformers}
+    volumes:
+      # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.
+      - ./corpus:/corpus:ro
+      - modelos_embeddings:/root/.cache/huggingface
     depends_on:
       db:
         condition: service_healthy
       ollama:
         condition: service_started
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:${PUERTO_API:-8000}:8000"
     networks: [interna, descarga]
 
 volumes:
   datos_db:
   modelos_ollama:
+  modelos_embeddings:
 
 networks:
   interna:

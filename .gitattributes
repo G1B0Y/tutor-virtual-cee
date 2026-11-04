@@ -1,0 +1,7 @@
+# Los PDF de reportlab no tienen bytes nulos y Git en Windows los trataría como texto:
+# con core.autocrlf cambiaría los saltos de línea y rompería la tabla xref del PDF.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.xlsx binary
+*.docx binary
