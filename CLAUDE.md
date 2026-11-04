@@ -88,6 +88,7 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 - **01/11/2026:** el prompt separa instrucciones, `<documentos>` y `<pregunta_del_alumno>`; el modelo debe contestar `SIN_EVIDENCIA` si los documentos no lo cubren (y entonces la API se abstiene). Defensa básica contra prompt injection.
 - **01/11/2026:** modelos iniciales (mientras no haya benchmark): LLM `qwen2.5:1.5b`, embeddings `paraphrase-multilingual-MiniLM-L12-v2` (384 dimensiones).
 - **01/11/2026:** hasta que el CEE entregue el real, se usa un corpus ficticio con el aviso "DOCUMENTO DE PRUEBA" en cada página.
+- **03/11/2026:** Alfredo prefiere seguir el Gantt. Consultar al tutor por los pendientes del alumno (widget → servicio de Moodle `core_calendar_get_action_events_by_timesort`, sin pasar por el servidor del tutor) queda **solo como propuesta** para después de PC3 (`docs/INTEGRACION_CAMPUS.md`).
 - **01/11/2026 (logo enviado por Alfredo):** el chat lleva la marca del CEE: rojo `#870c0e` (cabecera, botón, Enviar), negro `#141414` y gris `#747273`; el símbolo "C" del logo en el botón flotante y en la cabecera. Logos originales en `docs/referencia/marca/`.
 
 ## Notas para desarrollar

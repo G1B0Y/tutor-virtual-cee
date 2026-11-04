@@ -55,6 +55,10 @@ Para limitar las solicitudes por alumno y priorizar los materiales de **sus** cu
 
 Para el plugin, Moodle ya tiene lo necesario (`$USER`, `enrol_get_users_courses()` y el hook para agregar HTML antes del cierre del body), así que no hace falta crear tablas.
 
+## Propuesta futura (fuera del MVP): "¿qué me falta entregar?"
+
+Idea de Alfredo, 03/11/2026. El alumno le pregunta al tutor por sus pendientes y el widget, que corre dentro de Moodle con la sesión del alumno, se los pide a Moodle con el servicio oficial `core_calendar_get_action_events_by_timesort` (es lo mismo que muestra el bloque "Línea de tiempo"). Los datos no pasan por el servidor del tutor ni por el modelo de IA: no hay riesgo de fechas inventadas y se cumple la Ley 29733. Queda solo como propuesta y se retomaría después de PC3, si el ingeniero y el Grupo 3 lo aprueban.
+
 ## Lo que necesitamos acordar
 
 | Tema | Pregunta para el Grupo 3 |

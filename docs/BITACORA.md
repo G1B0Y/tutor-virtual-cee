@@ -6,6 +6,7 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 
 - El Grupo 3 (Campus Virtual) compartió su documentación: Moodle 5.3 LTS sobre Windows con Apache, PHP 8.3 y PostgreSQL 18, en una sola PC del CEE/UNI; 28 de 30 requisitos sin programar; solo desarrollan el tema `theme_cee`. Proponían crear tablas nuevas que consuman las de Moodle.
 - **Propuesta del Grupo 5** (`docs/INTEGRACION_CAMPUS.md`): el tutor no crea tablas en Moodle ni lee su base. Para PC3, el widget se agrega con "HTML adicional" (sin programar). Después, un plugin pequeño `local_tutorcee` pasa un token firmado con id opaco, rol y cursos matriculados (mínimos datos, Ley 29733).
+- Alfredo propuso que el tutor responda "¿qué me falta entregar?". Es viable con el servicio de Moodle que alimenta la "Línea de tiempo", llamado desde el widget sin pasar por el servidor del tutor. **Decisión:** seguir el Gantt y dejarlo como propuesta para después de PC3.
 - Riesgo detectado: si Moodle y el tutor comparten la PC de 8 GB, no hay RAM para ambos. Hay que preguntarlo.
 
 ## 01/11/2026

@@ -112,7 +112,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ## Segunda iteración (fuera del MVP)
 
-Memoria conversacional extensa, streaming, explicaciones avanzadas, cuestionarios, valoración de respuestas, historial persistente, personalización por matrícula, verificación automática tras la carga, indicadores de uso y pantalla de administración. Se retoman solo si el benchmark y el tiempo lo permiten.
+Consultar los pendientes del alumno en Moodle ("¿qué me falta entregar?", propuesta del 03/11 en `docs/INTEGRACION_CAMPUS.md`), memoria conversacional extensa, streaming, explicaciones avanzadas, cuestionarios, valoración de respuestas, historial persistente, personalización por matrícula, verificación automática tras la carga, indicadores de uso y pantalla de administración. Se retoman solo si el benchmark y el tiempo lo permiten.
 
 ## Riesgos que pueden mover el plan
 
