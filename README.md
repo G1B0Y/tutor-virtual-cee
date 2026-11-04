@@ -59,7 +59,7 @@ docker compose exec api python -m app.ingesta corpus /corpus/prueba
 docker compose exec api python -m app.ingesta estado
 ```
 
-Carga 4 PDF ficticios (temarios de Cadena de Suministro y Lean Six Sigma, una separata de inventarios y un reglamento académico) y 5 FAQs, todos marcados como **DOCUMENTO DE PRUEBA**. La primera carga descarga el modelo de embeddings (~470 MB, queda en el volumen `modelos_embeddings`). Si vuelves a correrlo, no duplica nada: los PDF que no cambiaron se saltan.
+Carga 6 PDF ficticios (temarios de Cadena de Suministro, Lean Six Sigma y Gestión de Proyectos con el PMBOK, separatas de inventarios y de herramientas estadísticas, y un reglamento académico) y 5 FAQs, todos marcados como **DOCUMENTO DE PRUEBA**. La primera carga descarga el modelo de embeddings (~470 MB, queda en el volumen `modelos_embeddings`). Si vuelves a correrlo, no duplica nada: los PDF que no cambiaron se saltan.
 
 Otros comandos de la ingesta:
 
@@ -69,7 +69,7 @@ Otros comandos de la ingesta:
 | Solo las FAQs (reemplaza las anteriores) | `docker compose exec api python -m app.ingesta faqs /corpus/prueba/faqs.csv` |
 | Qué hay cargado | `docker compose exec api python -m app.ingesta estado` |
 
-Los PDF de prueba se regeneran con `python scripts/generar_corpus_prueba.py` (necesita `pip install reportlab`, solo para desarrollo).
+Los PDF de prueba se generan con `python scripts/generar_corpus_prueba.py` (necesita `pip install reportlab`, solo para desarrollo). Solo crea los que faltan; con `--todos` rehace también los existentes (cambian y la ingesta los carga como versión nueva).
 
 ### 6. Abrir el chat dentro del campus simulado
 
@@ -91,6 +91,31 @@ Preguntas para probar:
 | ¿Quién ganó el último mundial? | "No encontré esa información…" y deriva al CEE (queda en `consultas_pendientes`) |
 
 La primera respuesta del modelo tarda más (lo carga en memoria); en CPU cuenta con 10–40 s por respuesta. Si apagas la API (`docker compose stop api`), el chat dice "El tutor no está disponible" y el campus sigue funcionando.
+
+### 7. Benchmark de modelos (Fase 2)
+
+Compara 2 modelos de embeddings y 2 de lenguaje con el set de 30 preguntas de `benchmark/preguntas.json` (20 que los documentos responden y 10 que el tutor debe rechazar). No cambia tu base: todo corre en una transacción que se deshace al final.
+
+```bash
+# Una sola vez: el segundo modelo de lenguaje (~1,5 GB)
+docker compose exec ollama ollama pull granite3.3:2b
+
+# Rápido (1–3 min): solo la búsqueda y los umbrales propuestos
+docker compose exec api python -m app.benchmark --solo-busqueda
+
+# Completo (30–60 min): búsqueda + respuestas con cada modelo de lenguaje
+docker compose exec api python -m app.benchmark
+```
+
+Antes del completo, deja **al menos 4 GB de RAM libres**: cierra el navegador, Zoom, Steam y Discord, y apaga el Supabase de Huarón (`npx supabase stop` en esa carpeta). Si falta RAM, los tiempos salen inflados o todo queda como `sin_llm`.
+
+El informe queda en `benchmark/resultados/AAAA-MM-DD_HHMM.md` (léelo en VS Code con la vista previa de Markdown) y el detalle de cada pregunta en el `.csv` del mismo nombre (se abre en Excel). Mide:
+
+- **recall@5**: si el fragmento con la respuesta quedó entre los 5 más cercanos (meta: 80 %).
+- **Umbral propuesto** de documentos y de FAQs: lo que mejor separa las preguntas de dentro de las de fuera. Cada modelo de embeddings tiene su propia escala de distancias, así que al cambiar de modelo hay que copiar sus umbrales a `.env` (`UMBRAL_DISTANCIA`, `UMBRAL_FAQ`).
+- **Aciertos con fuente**, **rechazos correctos** (por la búsqueda o por el modelo), tiempo al primer token, tiempo de respuesta (promedio y p95) y RAM de cada modelo.
+
+Opciones: `--embeddings a,b` y `--llm x,y` para elegir modelos; `--umbral 0.5` y `--umbral-faq 0.2` para probar umbrales fijos. Al terminar vuelve a cargar el modelo del chat.
 
 ### Comandos
 

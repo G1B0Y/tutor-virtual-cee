@@ -4,6 +4,7 @@ Usa embeddings "hash" (sin descargar modelos) y un LLM falso: prueban la tuberí
 La calidad real se mide en el benchmark (Fase 2) con el modelo de embeddings y Ollama.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -37,16 +38,21 @@ def con_corpus(db):
     return db
 
 
+def _documentos_del_corpus() -> int:
+    return len(json.loads((CORPUS / "corpus.json").read_text(encoding="utf-8"))["documentos"])
+
+
 def test_el_corpus_de_prueba_se_carga_completo(con_corpus):
     resumen = estado(con_corpus)
-    assert resumen[0] == "Documentos vigentes: 4"
+    assert _documentos_del_corpus() == 6
+    assert resumen[0] == f"Documentos vigentes: {_documentos_del_corpus()}"
     assert resumen[-1] == "FAQs activas: 5"
 
 
 def test_volver_a_cargar_el_mismo_corpus_no_duplica(con_corpus):
     mensajes = cargar_corpus(con_corpus, EmbeddingsHash(), CORPUS)
     assert all("sin cambios" in m for m in mensajes[:-1])
-    assert estado(con_corpus)[0] == "Documentos vigentes: 4"
+    assert estado(con_corpus)[0] == f"Documentos vigentes: {_documentos_del_corpus()}"
 
 
 def test_pdf_sin_texto_se_rechaza(db, tmp_path):
