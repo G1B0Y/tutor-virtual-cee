@@ -10,6 +10,25 @@ El tutor **no necesita tablas nuevas en Moodle ni leer su base de datos**. Tiene
 - Se cuida la Ley 29733: el tutor no recibe datos personales que no necesita (ni nombre, ni correo, ni notas).
 - Si el tutor se cae, el campus sigue funcionando: el widget solo muestra "no disponible".
 
+## ¿Por qué no una base de datos compartida?
+
+| Dato | Dónde vive | Dueño |
+| --- | --- | --- |
+| Usuarios, cursos, matrículas, notas, entregas | Base de Moodle | Grupo 3 |
+| Documentos validados por el CEE, fragmentos y embeddings | Base del tutor (pgvector) | Grupo 5 |
+
+Lo que el tutor necesita de Moodle llega por interfaces, no leyendo sus tablas:
+
+1. **Quién pregunta y sus cursos:** en el token de cada pregunta (Fase 2).
+2. **Materiales de los cursos (opcional):** por los servicios web oficiales de Moodle, de solo lectura (por ejemplo `core_course_get_contents`). Los usa una cuenta de servicio. El CEE valida cada material antes de que el tutor lo cargue.
+
+Motivos:
+
+- La base de Moodle solo escucha en su propia PC y no tiene pgvector.
+- Sus tablas cambian entre versiones, y una actualización del campus rompería al tutor.
+- Una falla del tutor no debe afectar al campus.
+- Por la Ley 29733, el tutor no debe poder ver notas, correos ni contraseñas.
+
 ## Fase 1 – Para la demo de PC3 (17/11): sin programar en Moodle
 
 1. El Grupo 5 entrega un archivo `tutor-cee.js` (el widget, con la marca del CEE).
