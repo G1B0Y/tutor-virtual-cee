@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from app.conversacion import DESPEDIDA, GRACIAS, PRESENTACION, respuesta_de_conversacion
+from app.conversacion import (CAMPUS_CURSOS, CAMPUS_ENTREGAS, CAMPUS_NOTAS, CAMPUS_PAGOS, DESPEDIDA, GRACIAS,
+                              PRESENTACION, respuesta_de_conversacion)
 
 RAIZ = Path(__file__).resolve().parents[2]
 
@@ -38,7 +39,32 @@ def test_preguntas_reales_siguen_el_camino_normal(mensaje):
     assert respuesta_de_conversacion(mensaje) is None
 
 
-def test_ninguna_pregunta_del_benchmark_se_toma_como_saludo():
+@pytest.mark.parametrize("mensaje,esperada", [
+    ("¿Qué cursos llevo?", CAMPUS_CURSOS), ("cuales son mis cursos", CAMPUS_CURSOS),
+    ("¿En qué cursos estoy matriculado?", CAMPUS_CURSOS),
+    ("¿Cuál es mi nota del examen final?", CAMPUS_NOTAS), ("cuanto saque en el parcial", CAMPUS_NOTAS),
+    ("¿Ya salieron mis notas?", CAMPUS_NOTAS), ("¿Cuántas faltas tengo en Lean?", CAMPUS_NOTAS),
+    ("¿Qué me falta entregar?", CAMPUS_ENTREGAS), ("¿Tengo tareas pendientes?", CAMPUS_ENTREGAS),
+    ("¿Cuánto debo?", CAMPUS_PAGOS), ("¿Tengo cuotas pendientes?", CAMPUS_PAGOS),
+])
+def test_datos_del_alumno_se_ven_en_el_campus(mensaje, esperada):
+    assert respuesta_de_conversacion(mensaje) == esperada
+
+
+@pytest.mark.parametrize("mensaje", [
+    "Si mi nota final está entre 11 y 13, ¿qué puedo hacer?",   # reglamento (D17)
+    "¿Qué nota necesito para aprobar un curso?",
+    "¿Qué porcentaje de asistencia se exige?",
+    "¿Qué cursos ofrece el CEE?",
+    "¿Cuánto cuesta la matrícula?",
+])
+def test_preguntas_generales_sobre_notas_o_cursos_siguen_al_buscador(mensaje):
+    assert respuesta_de_conversacion(mensaje) is None
+
+
+def test_ninguna_pregunta_de_los_documentos_del_benchmark_se_responde_fija():
     preguntas = json.loads((RAIZ / "benchmark" / "preguntas.json").read_text(encoding="utf-8"))
-    for p in preguntas["dentro"] + preguntas["fuera"]:
+    for p in preguntas["dentro"]:
         assert respuesta_de_conversacion(p["pregunta"]) is None, p["id"]
+    fijas = {p["id"] for p in preguntas["fuera"] if respuesta_de_conversacion(p["pregunta"])}
+    assert fijas == {"F09"}  # "¿Cuál es mi nota del examen final?" → Calificaciones del Campus

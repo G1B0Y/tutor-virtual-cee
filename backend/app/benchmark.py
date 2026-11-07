@@ -34,7 +34,7 @@ import httpx
 import psycopg
 
 from app.config import Configuracion, obtener_configuracion
-from app.consulta import FAQ, RESPONDIDA, SIN_EVIDENCIA, Turno, responder
+from app.consulta import FAQ, ORIENTACION, RESPONDIDA, SIN_EVIDENCIA, Turno, responder
 from app.ingesta import cargar_corpus
 from app.rag.busqueda import buscar_faq, buscar_fragmentos
 from app.rag.embeddings import Embeddings, _crear
@@ -312,7 +312,8 @@ def evaluar_llm(conexion: psycopg.Connection, emb: Embeddings, llm, preguntas: d
                 fila.correcta = r.estado in (RESPONDIDA, FAQ) and cumple_claves(r.respuesta, p["claves"])
                 fila.fuente_ok = r.estado == FAQ or any(f.titulo == titulos[p["archivo"]] for f in r.fuentes)
             else:
-                fila.correcta = r.estado == SIN_EVIDENCIA
+                # orientacion: respuesta fija que deriva al Campus o al CEE (p. ej. "mi nota"): tampoco inventa
+                fila.correcta = r.estado in (SIN_EVIDENCIA, ORIENTACION)
                 if fila.correcta:
                     fila.rechazo_por = "modelo" if espia.llamado else "búsqueda"
             filas.append(fila)

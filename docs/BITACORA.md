@@ -17,6 +17,7 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - Informe subido a `benchmark/resultados/2026-11-07_1822.md` con notas al final. El CSV quedó en la PC de Alfredo.
 - Comprobado en la PC de Alfredo (commit 652bacc): inventario de seguridad y DMAIC citan 1 fuente cada una (antes 4), sin asteriscos, en 9,7 s y 7,9 s.
 - Alfredo probó el chat: "¿en qué me puedes ayudar?" respondía "No encontré esa información…" y quedaba como consulta pendiente para el CEE. **Arreglo:** estado `orientacion` con texto fijo para saludos, gracias, despedidas y preguntas sobre el tutor, antes de buscar y sin registrar pendiente (25 pruebas nuevas, 80 en total).
+- Alfredo preguntó cómo manejar "cualquier cosa" que escriban, p. ej. "¿qué cursos llevo?". Capas: conversación (texto fijo) → FAQ → documentos con fuente → **datos del alumno** (texto fijo que indica la sección del Campus; con el plugin del Grupo 3, "¿qué cursos llevo?" se responderá con los cursos del token) → lo demás se abstiene y queda como pendiente para que el CEE agregue FAQs o documentos. Hecho el texto fijo de datos del alumno (cursos, notas/asistencia, entregas, pagos), con 16 pruebas más (96).
 - **Pendiente:** calibrar el margen de fuentes; verificar las licencias en la ficha oficial.
 
 ## 04/11/2026
