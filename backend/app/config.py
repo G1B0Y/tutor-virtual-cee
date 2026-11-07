@@ -30,7 +30,10 @@ class Configuracion(BaseSettings):
     largo_maximo_pregunta: int = 500
     # Una sola generación a la vez (RNF-M02); cuántas consultas pueden esperar su turno.
     cola_maxima: int = 3
+    # Plazo total de una respuesta (segundos) y tope de largo (tokens). Si se pasa, el chat muestra el fragmento
+    # más cercano (sin_llm). Sin tope, qwen2.5:1.5b entró en bucle en el benchmark del 07/11/2026.
     timeout_llm: float = 120.0
+    max_tokens_respuesta: int = 512
     # Al arrancar la API, cargar en segundo plano el modelo de embeddings y el de lenguaje
     # (la primera carga en CPU puede tardar minutos).
     precargar_llm: bool = True

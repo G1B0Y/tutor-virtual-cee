@@ -38,7 +38,7 @@ from app.consulta import FAQ, RESPONDIDA, SIN_EVIDENCIA, Turno, responder
 from app.ingesta import cargar_corpus
 from app.rag.busqueda import buscar_faq, buscar_fragmentos
 from app.rag.embeddings import Embeddings, _crear
-from app.rag.llm import ErrorLLM, LLMOllama
+from app.rag.llm import LLMOllama
 
 LIMA = timezone(timedelta(hours=-5))  # Perú no tiene horario de verano
 
@@ -137,46 +137,7 @@ def ram_total_mb() -> float:
 
 
 class LLMMedido(LLMOllama):
-    """Igual que LLMOllama, pero con streaming para medir el tiempo al primer token."""
-
-    def __init__(self, url: str, modelo: str, timeout: float):
-        super().__init__(url, modelo, timeout)
-        self.ultima: dict | None = None
-
-    def generar(self, mensajes: list[dict[str, str]]) -> str:
-        inicio = time.monotonic()
-        primer_token = None
-        partes: list[str] = []
-        final: dict = {}
-        try:
-            with httpx.stream(
-                "POST", f"{self.url}/api/chat",
-                json={"model": self.nombre, "messages": mensajes, "stream": True,
-                      "options": {"temperature": 0.1, "num_ctx": 4096}},
-                timeout=self.timeout,
-            ) as respuesta:
-                if respuesta.status_code == 404:
-                    raise ErrorLLM(f"El modelo {self.nombre} no está descargado en Ollama")
-                respuesta.raise_for_status()
-                for linea in respuesta.iter_lines():
-                    if not linea.strip():
-                        continue
-                    trozo = json.loads(linea)
-                    texto = trozo.get("message", {}).get("content", "")
-                    if texto and primer_token is None:
-                        primer_token = time.monotonic()
-                    partes.append(texto)
-                    if trozo.get("done"):
-                        final = trozo
-        except (httpx.HTTPError, ValueError) as error:
-            raise ErrorLLM(f"{type(error).__name__}: {error}") from error
-        fin = time.monotonic()
-        self.ultima = {
-            "ttft_ms": int(((primer_token or fin) - inicio) * 1000),
-            "ms_llm": int((fin - inicio) * 1000),
-            "tokens": final.get("eval_count", 0),
-        }
-        return "".join(partes).strip()
+    """LLMOllama (que ya mide el primer token en `ultima`) + utilidades para medir carga y RAM."""
 
     def descargar_todos(self) -> None:
         """Saca de la memoria cualquier modelo cargado, para medir la carga desde cero."""
@@ -386,7 +347,7 @@ def ejecutar(url: str, corpus: Path, preguntas: dict, modelos_emb: list[str], mo
     if faltan:
         raise ValueError(f"preguntas.json usa archivos que no están en corpus.json: {sorted(faltan)}")
     informe = Informe(datetime.now(LIMA), len(preguntas["dentro"]), len(preguntas["fuera"]), len(titulos))
-    crear_llm = crear_llm or (lambda nombre: LLMMedido(config.ollama_url, nombre, config.timeout_llm))
+    crear_llm = crear_llm or (lambda nombre: LLMMedido(config.ollama_url, nombre, config.timeout_llm, config.max_tokens_respuesta))
     llms = {nombre: crear_llm(nombre) for nombre in modelos_llm}
 
     for nombre_emb in modelos_emb:

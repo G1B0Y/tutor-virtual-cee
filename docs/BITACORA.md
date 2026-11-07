@@ -2,6 +2,14 @@
 
 Una entrada por sesión de trabajo, de la más reciente a la más antigua. El estado actual siempre está en `CLAUDE.md` y el plan en `docs/ROADMAP.md`; aquí queda el historial.
 
+## 07/11/2026
+
+- Benchmark en la PC de Alfredo (control remoto). Antes: se restauraron los 4 PDF de prueba que Git había dañado (se cargaron como versión 2), se descargó granite3.3:2b y se apagó el Supabase de Huarón para liberar RAM (con 1 GB libre el modelo no carga).
+- **Búsqueda:** recall@5 de 95 % con MiniLM (falla "¿Qué significan las siglas DMAIC?") y 100 % con e5-small; los dos superan la meta de 80 %. Umbrales propuestos: MiniLM 0.71 (FAQ 0.42), e5-small 0.18 (FAQ 0.10; sus distancias quedan muy juntas). 4 preguntas de fuera pasan el umbral con los dos (costo de la matrícula, profesor de Lean, próxima edición de PMBOK, "mi nota del examen final").
+- **Respuestas con MiniLM:** qwen2.5:1.5b 18/20 aciertos con fuente y 8/10 rechazos (respondió 2 trampas), 111 s promedio; granite3.3:2b 16/20 y 10/10 rechazos, 6,7 s promedio.
+- **Error encontrado:** con e5-small, qwen entró en bucle y escribió más de 35 000 tokens en 23 min. Ninguna llamada a Ollama limitaba el largo, y en streaming el timeout de httpx solo cuenta entre fragmentos. **Arreglo:** `LLMOllama` pide en streaming con `num_predict` (`MAX_TOKENS_RESPUESTA`, 512) y un plazo total (`TIMEOUT_LLM`); si llega al tope o al plazo, corta y el chat muestra el fragmento más cercano (sin_llm). 4 pruebas nuevas con un Ollama falso (49 en total). Probablemente también infló los 111 s de qwen.
+- **Pendiente:** relanzar el benchmark completo con el arreglo y elegir modelos con el informe.
+
 ## 04/11/2026
 
 - Alfredo pidió empezar el benchmark aunque todavía no hay documentos del CEE. Se hizo con el corpus de prueba, ampliado a 6 PDF: temario de **Gestión de Proyectos con el PMBOK** (48 h, CAPM, valor ganado) y **separata de herramientas estadísticas** de Lean (Cp/Cpk, Pareto, Ishikawa 6M, gráficos de control). El generador ahora solo crea los PDF que faltan, para no cambiar los que ya están cargados.

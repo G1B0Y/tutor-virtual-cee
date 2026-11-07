@@ -42,7 +42,7 @@ async def ciclo_de_vida(_app: FastAPI):
     config = obtener_configuracion()
     if config.precargar_llm:
         # En segundo plano: la API ya responde /salud mientras Ollama carga el modelo.
-        llm = LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm)
+        llm = LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm, config.max_tokens_respuesta)
         threading.Thread(target=precargar_modelos, args=(config, llm), daemon=True).start()
     yield
 
@@ -72,7 +72,7 @@ def obtener_embeddings(config: Configuracion = Depends(obtener_configuracion)) -
 
 
 def obtener_llm(config: Configuracion = Depends(obtener_configuracion)) -> LLM:
-    return LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm)
+    return LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm, config.max_tokens_respuesta)
 
 
 def obtener_conexion(config: Configuracion = Depends(obtener_configuracion)):
