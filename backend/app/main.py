@@ -99,5 +99,6 @@ def consulta(
     turno: Turno = Depends(obtener_turno),
     config: Configuracion = Depends(obtener_configuracion),
 ) -> Respuesta:
-    """`estado`: respondida, faq, sin_evidencia (se abstiene y deriva), sin_llm (modelo caído) u ocupado."""
+    """`estado`: respondida, faq, orientacion (saludo o pregunta sobre el tutor), sin_evidencia (se abstiene y
+    deriva), sin_llm (modelo caído) u ocupado."""
     return responder(datos.pregunta, conexion, emb, llm, turno, config)

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import psycopg
 
 from app.config import Configuracion
+from app.conversacion import respuesta_de_conversacion
 from app.rag.busqueda import FragmentoEncontrado, buscar_faq, buscar_fragmentos
 from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
@@ -18,6 +19,7 @@ FAQ = "faq"                        # respuesta validada, sin LLM
 SIN_EVIDENCIA = "sin_evidencia"    # no hay material suficiente: se abstiene y deriva (RF-M03)
 SIN_LLM = "sin_llm"                # el modelo no está disponible: muestra el fragmento más relevante (RNF-04)
 OCUPADO = "ocupado"                # la cola está llena (RF-M06)
+ORIENTACION = "orientacion"        # saludo o pregunta sobre el tutor: texto fijo, sin buscar ni registrar pendiente
 
 
 @dataclass
@@ -86,12 +88,17 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
               config: Configuracion) -> Respuesta:
     inicio = time.monotonic()
     pregunta = " ".join(pregunta.split())
-    vector = emb.codificar([pregunta], es_consulta=True)[0]
 
     def terminar(r: Respuesta, modelo: str | None = None) -> Respuesta:
         r.ms = int((time.monotonic() - inicio) * 1000)
         _registrar(conexion, r, pregunta, modelo, config)
         return r
+
+    fija = respuesta_de_conversacion(pregunta)
+    if fija:
+        return terminar(Respuesta(ORIENTACION, fija))
+
+    vector = emb.codificar([pregunta], es_consulta=True)[0]
 
     faq = buscar_faq(conexion, vector)
     if faq and faq.distancia <= config.umbral_faq:

@@ -118,3 +118,22 @@ def test_cada_consulta_deja_un_evento_sin_la_pregunta(con_corpus):
     responder("¿Cuál es la nota mínima para aprobar?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), CONFIG)
     fila = con_corpus.execute("SELECT tipo, estado FROM eventos WHERE tipo = 'consulta' ORDER BY id DESC").fetchone()
     assert fila == ("consulta", "faq")
+
+
+def test_saludo_responde_sin_buscar_ni_dejar_pendiente(con_corpus):
+    """"¿en qué me puedes ayudar?" se abstenía y quedaba como consulta pendiente para el CEE (07/11/2026)."""
+    from app.consulta import ORIENTACION
+
+    class EmbeddingsQueNoSeUsan(EmbeddingsHash):
+        def codificar(self, textos, es_consulta=False):
+            raise AssertionError("no debía buscar")
+
+    pendientes = con_corpus.execute("SELECT count(*) FROM consultas_pendientes").fetchone()[0]
+    llm = LLMFalso()
+    r = responder("en que me puedes ayudar?", con_corpus, EmbeddingsQueNoSeUsan(), llm, Turno(3), CONFIG)
+    assert r.estado == ORIENTACION
+    assert "temarios" in r.respuesta and r.fuentes == []
+    assert llm.recibido is None
+    assert con_corpus.execute("SELECT count(*) FROM consultas_pendientes").fetchone()[0] == pendientes
+    assert con_corpus.execute(
+        "SELECT estado FROM eventos WHERE tipo = 'consulta' ORDER BY id DESC LIMIT 1").fetchone()[0] == ORIENTACION

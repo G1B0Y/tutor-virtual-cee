@@ -13,7 +13,7 @@ export async function consultarSalud(senal?: AbortSignal): Promise<RespuestaSalu
   return respuesta.json() as Promise<RespuestaSalud>;
 }
 
-export type EstadoRespuesta = "respondida" | "faq" | "sin_evidencia" | "sin_llm" | "ocupado";
+export type EstadoRespuesta = "respondida" | "faq" | "orientacion" | "sin_evidencia" | "sin_llm" | "ocupado";
 
 export type Fuente = { titulo: string; pagina: number | null };
 

@@ -16,6 +16,7 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - granite escribe negritas de Markdown y el chat las mostraba con asteriscos: `limpiar_respuesta` las quita (y los `#` de títulos), con prueba. Con e5 el margen de fuentes de 0.10 citaba 4 páginas: `MARGEN_FUENTES` baja a 0.03 (provisional, falta calibrarlo). 55 pruebas.
 - Informe subido a `benchmark/resultados/2026-11-07_1822.md` con notas al final. El CSV quedó en la PC de Alfredo.
 - Comprobado en la PC de Alfredo (commit 652bacc): inventario de seguridad y DMAIC citan 1 fuente cada una (antes 4), sin asteriscos, en 9,7 s y 7,9 s.
+- Alfredo probó el chat: "¿en qué me puedes ayudar?" respondía "No encontré esa información…" y quedaba como consulta pendiente para el CEE. **Arreglo:** estado `orientacion` con texto fijo para saludos, gracias, despedidas y preguntas sobre el tutor, antes de buscar y sin registrar pendiente (25 pruebas nuevas, 80 en total).
 - **Pendiente:** calibrar el margen de fuentes; verificar las licencias en la ficha oficial.
 
 ## 04/11/2026
