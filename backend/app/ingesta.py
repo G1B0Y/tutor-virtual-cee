@@ -5,6 +5,7 @@ Uso (dentro del contenedor de la API, con el corpus montado en /corpus):
     docker compose exec api python -m app.ingesta documento /corpus/x.pdf --titulo "..." --tipo temario [--curso "..."]
     docker compose exec api python -m app.ingesta faqs /corpus/prueba/faqs.csv
     docker compose exec api python -m app.ingesta estado
+    docker compose exec api python -m app.ingesta reindexar      # al cambiar de modelo de embeddings
 """
 
 import argparse
@@ -109,6 +110,30 @@ def cargar_corpus(conexion: psycopg.Connection, emb: Embeddings, carpeta: Path) 
     return mensajes
 
 
+def reindexar(conexion: psycopg.Connection, emb: Embeddings) -> str:
+    """Recalcula los embeddings de todos los fragmentos y FAQs con el modelo actual.
+
+    Hace falta al cambiar de modelo de embeddings: la ingesta normal se salta los PDF que no cambiaron,
+    y los vectores viejos (de otro modelo) no se pueden comparar con las preguntas codificadas con el nuevo."""
+    inicio = time.monotonic()
+    with conexion.transaction():
+        fragmentos = conexion.execute("SELECT id, texto FROM fragmentos ORDER BY id").fetchall()
+        faqs = conexion.execute("SELECT id, pregunta FROM faqs ORDER BY id").fetchall()
+        with conexion.cursor() as cursor:
+            if fragmentos:
+                vectores = emb.codificar([t for _, t in fragmentos])
+                cursor.executemany("UPDATE fragmentos SET embedding = %s WHERE id = %s",
+                                   [(como_vector(v), i) for (i, _), v in zip(fragmentos, vectores)])
+            if faqs:
+                vectores = emb.codificar([p for _, p in faqs], es_consulta=True)
+                cursor.executemany("UPDATE faqs SET embedding = %s WHERE id = %s",
+                                   [(como_vector(v), i) for (i, _), v in zip(faqs, vectores)])
+        conexion.execute("INSERT INTO eventos (tipo, estado, ms_total) VALUES ('ingesta', 'reindexar', %s)",
+                         (int((time.monotonic() - inicio) * 1000),))
+    return (f"Reindexado con el modelo actual: {_cantidad(len(fragmentos), 'fragmento')} y "
+            f"{_cantidad(len(faqs), 'FAQ')} ({time.monotonic() - inicio:.0f} s).")
+
+
 def estado(conexion: psycopg.Connection) -> list[str]:
     filas = conexion.execute(
         """SELECT d.titulo, v.version, v.paginas, count(f.id)
@@ -136,6 +161,7 @@ def main(argumentos: list[str] | None = None) -> int:
     p_faqs = sub.add_parser("faqs", help="Reemplaza las FAQs por las de un CSV")
     p_faqs.add_argument("csv", type=Path)
     sub.add_parser("estado", help="Muestra qué hay cargado")
+    sub.add_parser("reindexar", help="Recalcula los embeddings con el modelo actual (al cambiar de modelo)")
     args = parser.parse_args(argumentos)
 
     config = obtener_configuracion()
@@ -148,6 +174,8 @@ def main(argumentos: list[str] | None = None) -> int:
                 emb = crear_embeddings(config.embeddings_proveedor, config.embeddings_modelo)
                 if args.accion == "corpus":
                     mensajes = cargar_corpus(conexion, emb, args.carpeta)
+                elif args.accion == "reindexar":
+                    mensajes = [reindexar(conexion, emb)]
                 elif args.accion == "documento":
                     mensajes = [cargar_documento(conexion, emb, args.pdf, args.titulo, args.tipo, args.curso)]
                 else:

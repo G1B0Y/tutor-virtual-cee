@@ -20,12 +20,16 @@ class Configuracion(BaseSettings):
     # --- RAG (valores iniciales; se calibran en el benchmark de la Fase 2) ---
     # "sentence-transformers" (real) o "hash" (solo pruebas y CI: no entiende significado, solo palabras).
     embeddings_proveedor: str = "sentence-transformers"
-    embeddings_modelo: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-    llm_modelo: str = "qwen2.5:1.5b"
+    # Elegidos con el benchmark del 07/11/2026 (benchmark/resultados/): e5-small encontró 20/20 respuestas y
+    # granite3.3:2b no inventó en ninguna de las 10 preguntas trampa (qwen2.5:1.5b inventó una fecha de inicio).
+    embeddings_modelo: str = "intfloat/multilingual-e5-small"
+    llm_modelo: str = "granite3.3:2b"
     # Distancia coseno máxima (0 = idéntico, 2 = opuesto) para considerar que un fragmento sirve.
-    umbral_distancia: float = 0.55
+    # Cada modelo de embeddings tiene su escala: estos valores son los que propuso el benchmark para e5-small
+    # (con MiniLM eran 0.71 y 0.42). Si se cambia de modelo, se recalibran y se corre `ingesta reindexar`.
+    umbral_distancia: float = 0.18
     # Distancia máxima para responder directo con una FAQ, sin LLM.
-    umbral_faq: float = 0.25
+    umbral_faq: float = 0.10
     fragmentos_por_consulta: int = 4
     largo_maximo_pregunta: int = 500
     # Una sola generación a la vez (RNF-M02); cuántas consultas pueden esperar su turno.

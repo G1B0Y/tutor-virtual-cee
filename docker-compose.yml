@@ -50,8 +50,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tutor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tutor}
       OLLAMA_URL: http://ollama:11434
       ORIGENES_PERMITIDOS: ${ORIGENES_PERMITIDOS:-["http://localhost:5173"]}
-      LLM_MODELO: ${LLM_MODELO:-qwen2.5:1.5b}
-      EMBEDDINGS_MODELO: ${EMBEDDINGS_MODELO:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      LLM_MODELO: ${LLM_MODELO:-granite3.3:2b}
+      EMBEDDINGS_MODELO: ${EMBEDDINGS_MODELO:-intfloat/multilingual-e5-small}
+      UMBRAL_DISTANCIA: ${UMBRAL_DISTANCIA:-0.18}
+      UMBRAL_FAQ: ${UMBRAL_FAQ:-0.10}
       EMBEDDINGS_PROVEEDOR: ${EMBEDDINGS_PROVEEDOR:-sentence-transformers}
     volumes:
       # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.

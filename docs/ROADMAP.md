@@ -59,8 +59,9 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (01/11: 7 preguntas; ver bitácora). Falta repetir con los arreglos del prompt.
 - [x] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus (3 de ellas para FAQ), 10 fuera de alcance (trámites, matrícula, temas ajenos, prompt injection) en `benchmark/preguntas.json` (04/11). Se rehace con el corpus real.
 - [x] Script del benchmark reproducible (`python -m app.benchmark`, 04/11): **2 modelos de embeddings** (MiniLM-L12 multilingüe, multilingual-e5-small) y **2 LLM** (qwen2.5:1.5b, granite3.3:2b); mide recall@1/@5, aciertos con fuente, rechazos correctos (por búsqueda y por modelo), tiempo al primer token, tiempo total (promedio y p95) y RAM; propone los umbrales de documentos y FAQs. Informe en `benchmark/resultados/`.
-- [ ] Correr el benchmark completo en la PC de Alfredo (con 4 GB de RAM libres) y guardar el informe en el repo.
-- [ ] Elegir modelos y fijar sus versiones con el informe; verificar licencias en la ficha oficial (RNF-23); copiar los umbrales propuestos a `.env.example`.
+- [x] Correr el benchmark completo en la PC de Alfredo (07/11: informe `2026-11-07_1822`). Falta subir el informe al repo.
+- [x] Elegir modelos (07/11, decisión de Alfredo): **e5-small + granite3.3:2b** (19/20 aciertos con fuente, 10/10 rechazos, 10,6 s promedio). Umbrales 0.18 / 0.10 en `.env.example` y por defecto; comando `python -m app.ingesta reindexar` para recalcular los vectores al cambiar de embeddings.
+- [ ] Verificar las licencias en la ficha oficial (RNF-23): e5-small (MIT) y granite3.3:2b (Apache 2.0).
 
 **Listo cuando:** recall@5 ≥ 80 % y hay un informe con los modelos elegidos y por qué.
 

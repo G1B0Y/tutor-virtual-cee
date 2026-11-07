@@ -47,10 +47,10 @@ Todo queda publicado solo en `127.0.0.1`: nadie de tu red puede entrar a la base
 ### 4. Descargar el modelo de lenguaje (una sola vez)
 
 ```bash
-docker compose exec ollama ollama pull qwen2.5:1.5b
+docker compose exec ollama ollama pull granite3.3:2b
 ```
 
-Pesa ~1 GB y queda guardado en el volumen `modelos_ollama`. Mientras no esté, `/salud` dice `degradado` ("falta descargar el modelo") y el bot responde solo con FAQs o con el fragmento más cercano. El modelo definitivo se elige en el benchmark (Fase 2).
+Pesa ~1,5 GB y queda guardado en el volumen `modelos_ollama`. Mientras no esté, `/salud` dice `degradado` ("falta descargar el modelo") y el bot responde solo con FAQs o con el fragmento más cercano. Es el modelo elegido en el benchmark del 07/11/2026, junto con los embeddings `intfloat/multilingual-e5-small` (se descargan solos la primera vez).
 
 ### 5. Cargar los documentos de prueba
 
@@ -116,6 +116,17 @@ El informe queda en `benchmark/resultados/AAAA-MM-DD_HHMM.md` (léelo en VS Code
 - **Aciertos con fuente**, **rechazos correctos** (por la búsqueda o por el modelo), tiempo al primer token, tiempo de respuesta (promedio y p95) y RAM de cada modelo.
 
 Opciones: `--embeddings a,b` y `--llm x,y` para elegir modelos; `--umbral 0.5` y `--umbral-faq 0.2` para probar umbrales fijos. Al terminar vuelve a cargar el modelo del chat.
+
+**Modelos elegidos (07/11/2026):** `intfloat/multilingual-e5-small` + `granite3.3:2b`, con `UMBRAL_DISTANCIA=0.18` y `UMBRAL_FAQ=0.10` (son los valores por defecto).
+
+### 8. Cambiar de modelo de embeddings
+
+Los vectores de los documentos guardados en la base dependen del modelo: al cambiarlo hay que recalcularlos (la ingesta normal se salta los PDF que no cambiaron). En `.env` cambia `EMBEDDINGS_MODELO` y sus umbrales, y luego:
+
+```bash
+docker compose up -d
+docker compose exec api python -m app.ingesta reindexar
+```
 
 ### Comandos
 
