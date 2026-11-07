@@ -15,7 +15,8 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - **DMAIC:** granite respondió bien ("… **Control**"), pero la clave vieja pedía "controlar". Con las raíces cuenta como acierto: granite queda en 20/20 y 10/10. Prueba con el texto real.
 - granite escribe negritas de Markdown y el chat las mostraba con asteriscos: `limpiar_respuesta` las quita (y los `#` de títulos), con prueba. Con e5 el margen de fuentes de 0.10 citaba 4 páginas: `MARGEN_FUENTES` baja a 0.03 (provisional, falta calibrarlo). 55 pruebas.
 - Informe subido a `benchmark/resultados/2026-11-07_1822.md` con notas al final. El CSV quedó en la PC de Alfredo.
-- **Pendiente:** `git pull` y reconstruir la API en la PC de Alfredo; calibrar el margen de fuentes; verificar las licencias en la ficha oficial.
+- Comprobado en la PC de Alfredo (commit 652bacc): inventario de seguridad y DMAIC citan 1 fuente cada una (antes 4), sin asteriscos, en 9,7 s y 7,9 s.
+- **Pendiente:** calibrar el margen de fuentes; verificar las licencias en la ficha oficial.
 
 ## 04/11/2026
 
