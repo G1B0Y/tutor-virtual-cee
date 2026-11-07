@@ -68,3 +68,12 @@ def test_set_de_preguntas_esta_completo():
         assert p["pagina"] >= 1 and p["claves"] and all(p["claves"]), p["id"]
     # Cada documento del corpus tiene al menos una pregunta
     assert archivos == {p["archivo"] for p in preguntas["dentro"]}
+
+
+def test_dmaic_de_granite_cuenta_como_acierto():
+    """Respuesta real de granite3.3:2b del 07/11/2026: decía "Control" y la clave vieja exigía "controlar"."""
+    respuesta = ("Las siglas DMAIC significan: - **Definir**: Identificar el problema. - **Medir**: Recopilar datos. "
+                 "- **Analizar**: causas raíz. - **Mejorar**: soluciones. - **Control**: Implementar medidas")
+    d10 = next(p for p in json.loads((RAIZ / "benchmark" / "preguntas.json").read_text(encoding="utf-8"))["dentro"] if p["id"] == "D10")
+    assert cumple_claves(respuesta, d10["claves"])
+    assert not cumple_claves(respuesta, [["definir"], ["medir"], ["controlar"]])

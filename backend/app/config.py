@@ -42,7 +42,9 @@ class Configuracion(BaseSettings):
     # (la primera carga en CPU puede tardar minutos).
     precargar_llm: bool = True
     # Fuentes: solo los fragmentos casi tan cercanos como el mejor (mejor distancia + este margen).
-    margen_fuentes: float = 0.10
+    # Va en la escala del modelo de embeddings: con e5-small (dentro ~0,12, fuera ~0,18) 0.10 citaba 4 páginas
+    # en vez de 1 o 2. 0.03 es provisional (proporcional al 0.10 que servía con MiniLM); falta calibrarlo.
+    margen_fuentes: float = 0.03
     # Canal humano: lo define el CEE (pendiente). Se muestra cuando el bot no puede responder.
     mensaje_derivacion: str = (
         "Dejé registrada tu consulta para que el equipo del CEE la revise. "

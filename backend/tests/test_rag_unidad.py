@@ -73,6 +73,16 @@ def test_pdf_se_versionan_como_binarios():
     assert "*.pdf binary" in [r.strip() for r in reglas]
 
 
+def test_limpiar_respuesta_quita_negritas_y_titulos_de_markdown():
+    """granite3.3:2b respondió DMAIC con "**Definir**" (07/11/2026) y el chat lo mostraba con los asteriscos."""
+    from app.rag.prompt import limpiar_respuesta
+
+    texto = "## DMAIC\nLas siglas significan:\n- **Definir**: el problema.\n- __Medir__: datos.\nCpk ≥ 1,33 × 2"
+    assert limpiar_respuesta(texto) == (
+        "DMAIC\nLas siglas significan:\n- Definir: el problema.\n- Medir: datos.\nCpk ≥ 1,33 × 2"
+    )
+
+
 def test_limpiar_respuesta_quita_latex():
     """qwen2.5:1.5b escribió la fórmula del EOQ en LaTeX y el chat la mostraba cruda (01/11/2026)."""
     from app.rag.prompt import limpiar_respuesta

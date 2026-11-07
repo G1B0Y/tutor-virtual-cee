@@ -121,7 +121,7 @@ Opciones: `--embeddings a,b` y `--llm x,y` para elegir modelos; `--umbral 0.5` y
 
 ### 8. Cambiar de modelo de embeddings
 
-Los vectores de los documentos guardados en la base dependen del modelo: al cambiarlo hay que recalcularlos (la ingesta normal se salta los PDF que no cambiaron). En `.env` cambia `EMBEDDINGS_MODELO` y sus umbrales, y luego:
+Los vectores de los documentos guardados en la base dependen del modelo: al cambiarlo hay que recalcularlos (la ingesta normal se salta los PDF que no cambiaron). En `.env` cambia `EMBEDDINGS_MODELO`, sus umbrales y `MARGEN_FUENTES` (también va en la escala del modelo), y luego:
 
 ```bash
 docker compose up -d

@@ -44,10 +44,17 @@ _LATEX = [
 ]
 
 
+_NEGRITAS = re.compile(r"(\*\*|__)(.+?)\1", re.DOTALL)
+_TITULOS = re.compile(r"^[ \t]*#{1,6}[ \t]+", re.MULTILINE)
+
+
 def limpiar_respuesta(texto: str) -> str:
-    """El modelo a veces escribe fórmulas en LaTeX aunque se le pida texto simple; el chat no lo dibuja."""
+    """El modelo a veces escribe LaTeX o Markdown (**negritas**, # títulos) aunque se le pida texto simple;
+    el chat muestra texto plano, así que quedarían los símbolos. Las viñetas con "- " se dejan: se leen bien."""
     for patron, reemplazo in _LATEX:
         texto = patron.sub(reemplazo, texto)
+    texto = _NEGRITAS.sub(r"\2", texto)
+    texto = _TITULOS.sub("", texto)
     return re.sub(r"[ \t]+\n", "\n", texto).strip()
 
 

@@ -11,7 +11,11 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - **Benchmark completo con el arreglo** (informe `2026-11-07_1822`): qwen bajó de 111 s a ~4 s (el bucle lo inflaba). MiniLM+qwen 16/20 y 8/10 rechazos; MiniLM+granite 16/20 y 10/10; e5-small+qwen 20/20 y 8/10; **e5-small+granite 19/20 y 10/10**, 10,6 s promedio y 26 s p95, 1,9 GB de RAM el modelo y 88 MB los embeddings (MiniLM: 685 MB). qwen inventó la fecha de inicio de PMBOK ("lunes 1 de marzo de 2024") y dijo que el profesor de Lean es "el Tutor Virtual del CEE".
 - **Recomendación:** e5-small + granite3.3:2b (no inventa; licencias MIT y Apache 2.0; cabe justo en el equipo del CEE). Se le pidió la decisión a Alfredo. El fallo de granite en DMAIC respondió "Definir, Medir…": se ampliaron las claves de D10 a raíces (defin/medi/control), con prueba.
 - **Decisión de Alfredo: e5-small + granite3.3:2b.** Quedan como valores por defecto en `config.py`, `docker-compose.yml` y `.env.example`, con UMBRAL_DISTANCIA 0.18 y UMBRAL_FAQ 0.10 (antes 0.55 / 0.25). Nuevo comando `python -m app.ingesta reindexar`: recalcula los vectores de fragmentos y FAQs con el modelo actual (la ingesta normal se salta los PDF sin cambios, y los vectores de MiniLM no sirven con e5). 3 pruebas nuevas (53 en total).
-- **Pendiente:** aplicarlo en la PC de Alfredo (`.env`, reconstruir, reindexar), subir el informe al repo y verificar las licencias en la ficha oficial.
+- **Aplicado en la PC de Alfredo** (control remoto): `.env` con los 4 valores, API reconstruida y `reindexar` (6 documentos y 5 FAQs en 2 s). Prueba: inventario de seguridad respondida con la fórmula, nota mínima por FAQ y el mundial sin evidencia.
+- **DMAIC:** granite respondió bien ("… **Control**"), pero la clave vieja pedía "controlar". Con las raíces cuenta como acierto: granite queda en 20/20 y 10/10. Prueba con el texto real.
+- granite escribe negritas de Markdown y el chat las mostraba con asteriscos: `limpiar_respuesta` las quita (y los `#` de títulos), con prueba. Con e5 el margen de fuentes de 0.10 citaba 4 páginas: `MARGEN_FUENTES` baja a 0.03 (provisional, falta calibrarlo). 55 pruebas.
+- Informe subido a `benchmark/resultados/2026-11-07_1822.md` con notas al final. El CSV quedó en la PC de Alfredo.
+- **Pendiente:** `git pull` y reconstruir la API en la PC de Alfredo; calibrar el margen de fuentes; verificar las licencias en la ficha oficial.
 
 ## 04/11/2026
 
