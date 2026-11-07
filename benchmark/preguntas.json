@@ -14,7 +14,7 @@
     {"id": "D07", "pregunta": "¿Cuál es la fórmula del lote económico de compra?", "archivo": "separata_gestion_inventarios.pdf", "pagina": 3, "claves": [["√", "raiz"], ["demanda anual", "2 × d", "2 x d", "2d"]]},
     {"id": "D08", "pregunta": "En el ejemplo de la separata, ¿cuántas unidades da el lote económico de compra?", "archivo": "separata_gestion_inventarios.pdf", "pagina": 3, "claves": [["949"]]},
     {"id": "D09", "pregunta": "¿Cuántas horas tiene el curso Lean Six Sigma Green Belt y en qué modalidad se dicta?", "archivo": "temario_lean_six_sigma.pdf", "pagina": 1, "claves": [["60"], ["semipresencial"]]},
-    {"id": "D10", "pregunta": "¿Qué significan las siglas DMAIC?", "archivo": "temario_lean_six_sigma.pdf", "pagina": 1, "claves": [["definir"], ["medir"], ["controlar"]]},
+    {"id": "D10", "pregunta": "¿Qué significan las siglas DMAIC?", "archivo": "temario_lean_six_sigma.pdf", "pagina": 1, "claves": [["defin"], ["medi"], ["control"]]},
     {"id": "D11", "pregunta": "¿Qué conocimientos previos necesito para llevar Lean Six Sigma?", "archivo": "temario_lean_six_sigma.pdf", "pagina": 1, "claves": [["estadistica"], ["excel"]]},
     {"id": "D12", "pregunta": "¿Con qué valor de Cpk se considera que un proceso es capaz?", "archivo": "separata_lean_herramientas_estadisticas.pdf", "pagina": 1, "claves": [["1,33", "1.33"]]},
     {"id": "D13", "pregunta": "¿Cuáles son las 6M del diagrama de Ishikawa?", "archivo": "separata_lean_herramientas_estadisticas.pdf", "pagina": 2, "claves": [["metodo"], ["maquina"], ["medicion"]]},

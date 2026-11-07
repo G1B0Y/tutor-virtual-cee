@@ -8,7 +8,9 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - **Búsqueda:** recall@5 de 95 % con MiniLM (falla "¿Qué significan las siglas DMAIC?") y 100 % con e5-small; los dos superan la meta de 80 %. Umbrales propuestos: MiniLM 0.71 (FAQ 0.42), e5-small 0.18 (FAQ 0.10; sus distancias quedan muy juntas). 4 preguntas de fuera pasan el umbral con los dos (costo de la matrícula, profesor de Lean, próxima edición de PMBOK, "mi nota del examen final").
 - **Respuestas con MiniLM:** qwen2.5:1.5b 18/20 aciertos con fuente y 8/10 rechazos (respondió 2 trampas), 111 s promedio; granite3.3:2b 16/20 y 10/10 rechazos, 6,7 s promedio.
 - **Error encontrado:** con e5-small, qwen entró en bucle y escribió más de 35 000 tokens en 23 min. Ninguna llamada a Ollama limitaba el largo, y en streaming el timeout de httpx solo cuenta entre fragmentos. **Arreglo:** `LLMOllama` pide en streaming con `num_predict` (`MAX_TOKENS_RESPUESTA`, 512) y un plazo total (`TIMEOUT_LLM`); si llega al tope o al plazo, corta y el chat muestra el fragmento más cercano (sin_llm). 4 pruebas nuevas con un Ollama falso (49 en total). Probablemente también infló los 111 s de qwen.
-- **Pendiente:** relanzar el benchmark completo con el arreglo y elegir modelos con el informe.
+- **Benchmark completo con el arreglo** (informe `2026-11-07_1822`): qwen bajó de 111 s a ~4 s (el bucle lo inflaba). MiniLM+qwen 16/20 y 8/10 rechazos; MiniLM+granite 16/20 y 10/10; e5-small+qwen 20/20 y 8/10; **e5-small+granite 19/20 y 10/10**, 10,6 s promedio y 26 s p95, 1,9 GB de RAM el modelo y 88 MB los embeddings (MiniLM: 685 MB). qwen inventó la fecha de inicio de PMBOK ("lunes 1 de marzo de 2024") y dijo que el profesor de Lean es "el Tutor Virtual del CEE".
+- **Recomendación:** e5-small + granite3.3:2b (no inventa; licencias MIT y Apache 2.0; cabe justo en el equipo del CEE). Se le pidió la decisión a Alfredo. El fallo de granite en DMAIC respondió "Definir, Medir…": se ampliaron las claves de D10 a raíces (defin/medi/control), con prueba.
+- **Pendiente:** decisión de modelos, cambiar `.env`/`.env.example` y recargar los documentos con e5; subir el informe al repo.
 
 ## 04/11/2026
 

@@ -41,6 +41,15 @@ def test_umbral_que_separa_con_grupos_mezclados():
     assert 0.45 <= umbral < 0.80
 
 
+def test_claves_de_dmaic_aceptan_sustantivos_y_verbos():
+    # 07/11/2026: granite respondió bien DMAIC ("Definir, Medir…") y el benchmark lo marcó como fallo.
+    preguntas = json.loads((RAIZ / "benchmark" / "preguntas.json").read_text(encoding="utf-8"))
+    claves = next(p["claves"] for p in preguntas["dentro"] if p["id"] == "D10")
+    assert cumple_claves("Definir, Medir, Analizar, Mejorar y Controlar.", claves)
+    assert cumple_claves("Definición, medición, análisis, mejora y control.", claves)
+    assert not cumple_claves("Es una metodología de mejora.", claves)
+
+
 def test_percentil():
     assert percentil([], 95) == 0
     assert percentil([5, 1, 3], 50) == 3
