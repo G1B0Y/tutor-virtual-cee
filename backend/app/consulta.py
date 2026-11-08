@@ -9,7 +9,7 @@ import psycopg
 
 from app.config import Configuracion
 from app.conversacion import respuesta_de_conversacion
-from app.rag.busqueda import FragmentoEncontrado, buscar_faq, buscar_fragmentos
+from app.rag.busqueda import FragmentoEncontrado, buscar_faq, buscar_fragmentos, fragmentos_que_dicen
 from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
 from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta
@@ -89,6 +89,21 @@ def texto_para_buscar(texto: str) -> str:
     return _N_TEMA.sub(lambda m: f"{'unidad' if m[2].lower() == 'tema' else m[2]} {_numero(m[1])}", texto)
 
 
+_SEGUIMIENTO = re.compile(
+    r"\b(ese|esa|eso|esos|esas|aquel|aquella|dicho|dicha|mismo|misma)\b"
+    r"|\b(este|esta|estos|estas) (curso|cursos|programa|tema|temas|modulo|unidad|separata|temario|documento)\b"
+    r"|^(y|e|entonces|osea|o sea)\b"
+)
+_UNIDAD_N = re.compile(r"\bunidad (\d+)\b")
+
+
+def es_seguimiento(pregunta: str) -> bool:
+    """La pregunta depende de la anterior: "ese curso", "¿y el tema dos?", "explícame eso"."""
+    from app.conversacion import _normalizar
+
+    return bool(_SEGUIMIENTO.search(_normalizar(pregunta)))
+
+
 def seleccionar(encontrados: list[FragmentoEncontrado], umbral: float, margen: float) -> list[FragmentoEncontrado]:
     """Fragmentos bajo el umbral y casi tan cercanos como el mejor: son los que se dan al modelo y se citan."""
     utiles = [f for f in encontrados if f.distancia <= umbral]
@@ -110,10 +125,25 @@ def _registrar(conexion: psycopg.Connection, r: Respuesta, pregunta: str, modelo
         )
 
 
+def _con_unidad_pedida(conexion: psycopg.Connection, vector: list[float], pregunta: str,
+                       utiles: list[FragmentoEncontrado]) -> list[FragmentoEncontrado]:
+    """Si piden "unidad N", asegura que vaya al modelo el fragmento del documento que dice "Unidad N": en el temario
+    de PMBOK el que más se parecía era el de las unidades 3 y 4, y el modelo llamó "tema uno" a Costos (08/11/2026)."""
+    pedida = _UNIDAD_N.search(texto_para_buscar(pregunta).lower())
+    if not pedida or not utiles:
+        return utiles
+    titulo = utiles[0].titulo
+    if any(re.search(rf"\bunidad\s+{pedida[1]}\b", f.texto, re.IGNORECASE) for f in utiles if f.titulo == titulo):
+        return utiles
+    extra = fragmentos_que_dicen(conexion, vector, titulo, rf"\munidad\s+{pedida[1]}\M", 1)
+    return extra + [f for f in utiles if f not in extra]
+
+
 def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm: LLM, turno: Turno,
-              config: Configuracion, anterior: str | None = None) -> Respuesta:
-    """`anterior`: la pregunta previa del alumno en el mismo chat (la manda el navegador; no se guarda). Se usa
-    solo si la pregunta sola no encuentra nada, para entender seguimientos como "dame un resumen de ese curso"."""
+              config: Configuracion, anterior: str | None = None, documento_anterior: str | None = None) -> Respuesta:
+    """Seguimientos (los manda el navegador; no se guardan): `anterior` es la pregunta previa del alumno en el mismo
+    chat y `documento_anterior`, el documento de la respuesta previa. Se usan si la pregunta se refiere a algo
+    anterior ("ese curso", "¿y el tema dos?") o si sola no encuentra nada."""
     inicio = time.monotonic()
     pregunta = " ".join(pregunta.split())
     anterior = " ".join((anterior or "").split()) or None
@@ -136,15 +166,26 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     encontrados = buscar_fragmentos(conexion, vector, config.fragmentos_por_consulta)
     utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
     contexto = None
-    if not utiles and anterior and not respuesta_de_conversacion(anterior):
-        # Seguimiento: "estoy llevando ese curso, dame un resumen del tema uno" no dice qué curso (08/11/2026).
-        # "ese curso" es el documento de la pregunta anterior: se busca solo en él para no mezclar cursos.
-        previo = buscar_fragmentos(conexion, emb.codificar([texto_para_buscar(anterior)], es_consulta=True)[0], 1)
-        documento = previo[0].titulo if previo and previo[0].distancia <= config.umbral_distancia else None
-        juntas = emb.codificar([f"{texto_para_buscar(anterior)}. {texto_para_buscar(pregunta)}"], es_consulta=True)[0]
-        encontrados = buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta, documento)
-        utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
-        contexto = anterior if utiles else None
+    hay_anterior = bool(anterior or documento_anterior) and not (anterior and respuesta_de_conversacion(anterior))
+    if hay_anterior and (not utiles or es_seguimiento(pregunta)):
+        # Seguimiento (08/11/2026): "estoy llevando ese curso, dame un resumen del tema uno" no dice qué curso.
+        # "Ese curso" es el documento de la respuesta anterior (lo reenvía el chat) o, si no vino, el que encuentra
+        # la pregunta anterior. Se busca solo en él para no mezclar cursos.
+        documento = documento_anterior
+        if not documento and anterior:
+            previo = buscar_fragmentos(conexion, emb.codificar([texto_para_buscar(anterior)], es_consulta=True)[0], 1)
+            documento = previo[0].titulo if previo and previo[0].distancia <= config.umbral_distancia else None
+        texto = f"{texto_para_buscar(anterior)}. {texto_para_buscar(pregunta)}" if anterior else texto_para_buscar(pregunta)
+        juntas = emb.codificar([texto], es_consulta=True)[0]
+        en_documento = seleccionar(buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta, documento),
+                                   config.umbral_distancia, config.margen_fuentes) if documento else []
+        if en_documento:
+            utiles, contexto = en_documento, anterior
+        elif not utiles:
+            utiles = seleccionar(buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta),
+                                 config.umbral_distancia, config.margen_fuentes)
+            contexto = anterior if utiles else None
+    utiles = _con_unidad_pedida(conexion, vector, pregunta, utiles)
     if not utiles:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
                                   + config.mensaje_derivacion))

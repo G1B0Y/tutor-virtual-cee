@@ -1,5 +1,7 @@
 import math
 
+import pytest
+
 from app.consulta import Turno
 from app.rag.busqueda import FragmentoEncontrado
 from app.rag.embeddings import DIMENSION, EmbeddingsHash
@@ -205,3 +207,14 @@ def test_texto_para_buscar_lleva_tema_uno_a_unidad_1():
     assert texto_para_buscar("explícame el primer tema") == "explícame el unidad 1"
     assert texto_para_buscar("¿qué ve el módulo dos?") == "¿qué ve el módulo 2?"
     assert texto_para_buscar("¿Qué temas se ven en el módulo de pronóstico?") == "¿Qué temas se ven en el módulo de pronóstico?"
+
+
+@pytest.mark.parametrize("pregunta,esperado", [
+    ("ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO", True),
+    ("¿y el tema dos?", True), ("explícame eso", True), ("¿qué evalúa este curso?", True),
+    ("¿Cómo se calcula el inventario de seguridad?", False), ("¿Qué está incluido en el temario de Lean?", False),
+])
+def test_es_seguimiento(pregunta, esperado):
+    from app.consulta import es_seguimiento
+
+    assert es_seguimiento(pregunta) is esperado

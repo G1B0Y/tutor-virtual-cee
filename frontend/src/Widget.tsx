@@ -59,11 +59,15 @@ export function Widget() {
     const texto = pregunta.trim();
     if (texto.length < 2 || pensando) return;
     const anterior = [...mensajes].reverse().find((m) => m.de === "alumno")?.texto;
+    const ultimaDelBot = [...mensajes].reverse().find((m) => m.de === "bot" && m.id > 0);
+    const documento = ultimaDelBot && ultimaDelBot.de === "bot" && ultimaDelBot.estado === "respondida"
+      ? ultimaDelBot.fuentes?.[0]?.titulo
+      : undefined;
     agregar({ de: "alumno", texto });
     setPregunta("");
     setPensando(true);
     try {
-      const r = await consultar(texto, anterior);
+      const r = await consultar(texto, anterior, documento);
       agregar({ de: "bot", texto: r.respuesta, estado: r.estado, fuentes: r.fuentes });
       setConexion("disponible");
     } catch {

@@ -26,12 +26,18 @@ export type RespuestaConsulta = {
 
 export const LARGO_MAXIMO_PREGUNTA = 500;
 
-/** `anterior`: la pregunta previa del alumno en este chat, para entender seguimientos ("ese curso"). */
-export async function consultar(pregunta: string, anterior?: string, senal?: AbortSignal): Promise<RespuestaConsulta> {
+/** Seguimientos ("ese curso", "¿y el tema dos?"): `anterior` es la pregunta previa del alumno en este chat y
+ * `documento`, el documento de la respuesta previa. Solo viajan en la consulta; el servidor no los guarda. */
+export async function consultar(
+  pregunta: string,
+  anterior?: string,
+  documento?: string,
+  senal?: AbortSignal,
+): Promise<RespuestaConsulta> {
   const respuesta = await fetch(`${API_URL}/consulta`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(anterior ? { pregunta, anterior } : { pregunta }),
+    body: JSON.stringify({ pregunta, ...(anterior ? { anterior } : {}), ...(documento ? { documento } : {}) }),
     signal: senal,
   });
   if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);

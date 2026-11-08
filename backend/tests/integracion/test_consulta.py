@@ -173,3 +173,31 @@ def test_la_pregunta_anterior_no_se_guarda_en_pendientes(con_corpus):
     guardadas = [p for (p,) in con_corpus.execute("SELECT pregunta FROM consultas_pendientes").fetchall()]
     assert "¿Y el tema dos?" in guardadas
     assert not any("12345" in p for p in guardadas)
+
+
+PMBOK = "Temario – Gestión de Proyectos con el PMBOK (PRUEBA)"
+
+
+def test_seguimiento_se_detecta_aunque_la_pregunta_sola_encuentre_algo(con_corpus):
+    """Con "tema uno" → "unidad 1" la pregunta sola pasaba el umbral y mezclaba 4 documentos (08/11/2026)."""
+    llm = LLMFalso()
+    r = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG, anterior=ANTERIOR)
+    assert r.estado == RESPONDIDA
+    assert {f.titulo for f in r.fuentes} == {PMBOK}
+    assert "Unidad 1" in llm.recibido[-1]["content"]
+
+
+def test_seguimiento_encadenado_usa_el_documento_de_la_respuesta_anterior(con_corpus):
+    """"¿y el tema dos?" después de "ese curso…": la pregunta anterior tampoco nombra el curso."""
+    llm = LLMFalso()
+    r = responder("¿y el tema dos?", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG,
+                  anterior=SEGUIMIENTO, documento_anterior=PMBOK)
+    assert r.estado == RESPONDIDA
+    assert {f.titulo for f in r.fuentes} == {PMBOK}
+    assert "Unidad 2" in llm.recibido[-1]["content"]
+
+
+def test_documento_anterior_que_no_existe_no_rompe_la_busqueda(con_corpus):
+    r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3),
+                  CONFIG, documento_anterior="Reglamento Académico (FAQ)")
+    assert r.estado == RESPONDIDA

@@ -86,6 +86,10 @@ class Pregunta(BaseModel):
         default=None, max_length=500,
         description="Pregunta previa del alumno en el mismo chat, para entender seguimientos. No se guarda.",
     )
+    documento: str | None = Field(
+        default=None, max_length=300,
+        description="Documento de la respuesta previa (título de su primera fuente), para seguimientos. No se guarda.",
+    )
 
 
 @app.get("/salud", tags=["operación"], summary="Estado de la API, la base y Ollama")
@@ -105,4 +109,4 @@ def consulta(
 ) -> Respuesta:
     """`estado`: respondida, faq, orientacion (saludo o pregunta sobre el tutor), sin_evidencia (se abstiene y
     deriva), sin_llm (modelo caído) u ocupado."""
-    return responder(datos.pregunta, conexion, emb, llm, turno, config, datos.anterior)
+    return responder(datos.pregunta, conexion, emb, llm, turno, config, datos.anterior, datos.documento)
