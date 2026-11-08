@@ -64,7 +64,8 @@ def respaldo(respuesta: str, fragmentos: list[str], pregunta: str = "") -> float
 
 
 def _frase_en(frase: list[str], fuentes: list[list[str]]) -> bool:
-    """Las raíces de `frase` aparecen seguidas y en orden en alguna fuente (se tolera 1 palabra entre medio)."""
+    """Las raíces de `frase` aparecen seguidas y en orden en alguna fuente (se toleran 2 palabras entre medio:
+    "estimación pesimista" está en "la estimación optimista (O), la más probable (M) y la pesimista (P)")."""
     if not frase:
         return True
     for fuente in fuentes:
@@ -73,7 +74,7 @@ def _frase_en(frase: list[str], fuentes: list[list[str]]) -> bool:
                 continue
             pos, ok = inicio, True
             for siguiente in frase[1:]:
-                ventana = fuente[pos + 1: pos + 3]
+                ventana = fuente[pos + 1: pos + 4]
                 if siguiente not in ventana:
                     ok = False
                     break
@@ -83,10 +84,35 @@ def _frase_en(frase: list[str], fuentes: list[list[str]]) -> bool:
     return False
 
 
+_LINEA_ITEM = re.compile(r"^\s*(\d{1,2}[.)]|[-•*])\s+(.*)$")
+
+
+def _partir(respuesta: str) -> tuple[str, list[tuple[str, str]], str]:
+    """(texto antes de la lista, [(marca, ítem)], texto después de la lista); sin lista: (respuesta, [], "").
+
+    Si 3 líneas o más empiezan con "1." o "-", solo esas son ítems: en una fórmula, "(4 + 4×6 + 14) / 6" o
+    "(P - O) / 6" tienen "14)" y "- " que no son ítems (08/11/2026, PERT). Lo que viene en líneas después del último
+    ítem es un comentario aparte ("Duración esperada = …"). Si no, se buscan ítems en una sola línea ("1. … 2. …")."""
+    lineas = respuesta.strip().splitlines()
+    marcadas = [n for n, linea in enumerate(lineas) if _LINEA_ITEM.match(linea)]
+    if len(marcadas) >= 3:
+        lista: list[tuple[str, str]] = []
+        for k, n in enumerate(marcadas):
+            fin = marcadas[k + 1] if k + 1 < len(marcadas) else n + 1
+            marca, texto = _LINEA_ITEM.match(lineas[n]).groups()
+            lista.append((marca, " ".join([texto, *[l.strip() for l in lineas[n + 1:fin]]]).strip()))
+        antes = " ".join(l.strip() for l in lineas[:marcadas[0]])
+        despues = " ".join(l.strip() for l in lineas[marcadas[-1] + 1:])
+        return antes, lista, despues
+    partes = _ITEM.split(respuesta)
+    if len(partes) <= 6:  # menos de 3 ítems
+        return respuesta, [], ""
+    return partes[0], list(zip(partes[1::2], partes[2::2])), ""
+
+
 def items(respuesta: str) -> list[str]:
     """Ítems de una enumeración ("1. …  2. …" o "- …"), aunque vengan en una sola línea."""
-    partes = _ITEM.split(respuesta)
-    return [p.strip() for p in partes[2::2] if p.strip()] if len(partes) > 6 else []
+    return [t.strip() for _, t in _partir(respuesta)[1] if t.strip()]
 
 
 def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: float = 0.6) -> tuple[str | None, str]:
@@ -107,8 +133,8 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
         propias = _raices(texto)
         return not propias or len(propias & conocidas) / len(propias) >= minimo
 
-    partes = _ITEM.split(respuesta)
-    es_lista = len(partes) > 6  # 3 ítems o más
+    antes, lista, despues = _partir(respuesta)
+    es_lista = bool(lista)  # 3 ítems o más
     salida: list[str] = []
     quitadas = total = 0
 
@@ -132,8 +158,7 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
             return None, "la primera oración no está en los documentos"
         agregar_oraciones(respuesta)
     else:
-        agregar_oraciones(partes[0])
-        lista = list(zip(partes[1::2], partes[2::2]))
+        agregar_oraciones(antes)
         malos = 0
         for n, (marca, item) in enumerate(lista):
             item = item.strip()
@@ -141,12 +166,20 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
             if n == len(lista) - 1:  # tras el último ítem suele venir texto suelto
                 trozos = _ORACION.split(item, maxsplit=1)
                 item, resto = trozos[0], (trozos[1] if len(trozos) > 1 else "")
-            cabeza, _, explicacion = item.partition(":")
+                resto = f"{resto} {despues}".strip()
+            # "Nombre: explicación" o "Nombre = fórmula" ("Disponibilidad = tiempo de operación / …").
+            cabeza, separador, explicacion = (re.split(r"(:| = )", item, maxsplit=1) + ["", ""])[:3]
+            nombre = cabeza
             if len(cabeza.split()) > 6:
-                cabeza, explicacion = item, ""
+                cabeza = nombre = item
+                separador = explicacion = ""
+            else:
+                # Lo que va entre paréntesis en el nombre es una aclaración ("Disponibilidad (Availability)",
+                # "Optimista (O)"): la frase que tiene que estar en los documentos es el nombre.
+                nombre = re.sub(r"\([^)]*\)", " ", cabeza)
             peso = len(_raices(item))
             total += peso
-            if not _frase_en(_palabras(cabeza), fuentes) or not cifras_ok(cabeza):
+            if not _frase_en(_palabras(nombre), fuentes) or not cifras_ok(cabeza):
                 malos += 1
                 quitadas += peso
                 continue
@@ -155,7 +188,8 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
                 # para abstenerse ("Definir: identificar el problema…" → "Definir").
                 total -= len(_raices(explicacion))
                 explicacion = ""
-            salida.append(f"{marca} {cabeza.strip()}" + (f": {explicacion.strip()}" if explicacion.strip() else ""))
+            sep = ":" if separador.strip() == ":" else f" {separador.strip()}"
+            salida.append(f"{marca} {cabeza.strip()}" + (f"{sep} {explicacion.strip()}" if explicacion.strip() else ""))
             if resto:
                 # Comentario del modelo después de la lista ("Estas son las etapas…"): si no tiene respaldo se
                 # quita, pero la lista, que sí está en los documentos, se mantiene.

@@ -240,15 +240,20 @@ def _titulos_por_archivo(corpus: Path) -> dict[str, str]:
 
 
 def evaluar_busqueda(conexion: psycopg.Connection, emb: Embeddings, preguntas: dict, titulos: dict[str, str],
-                     nombre_emb: str) -> tuple[list[Fila], dict]:
+                     nombre_emb: str, umbral: float | None = None,
+                     peso_lexico: float = 1.0) -> tuple[list[Fila], dict]:
+    """Con `umbral` (el del modelo configurado), el recall se mide con la búsqueda híbrida, como la usa el chat;
+    las distancias (y el umbral que se propone) salen siempre de la búsqueda por significado."""
     filas: list[Fila] = []
     for grupo in ("dentro", "fuera"):
         for p in preguntas[grupo]:
             vector = emb.codificar([p["pregunta"]], es_consulta=True)[0]
-            top = buscar_fragmentos(conexion, vector, 5)
+            cercanos = buscar_fragmentos(conexion, vector, 5)
+            top = (buscar_fragmentos(conexion, vector, 5, texto=p["pregunta"], umbral=umbral, peso_lexico=peso_lexico)
+                   if umbral is not None else cercanos)
             faq = buscar_faq(conexion, vector)
             fila = Fila(nombre_emb, "", p["id"], grupo, p["pregunta"],
-                        distancia_mejor=round(top[0].distancia, 4) if top else None,
+                        distancia_mejor=round(cercanos[0].distancia, 4) if cercanos else None,
                         distancia_faq=round(faq.distancia, 4) if faq else None)
             if grupo == "dentro":
                 esperado = (titulos[p["archivo"]], p["pagina"])
@@ -367,7 +372,9 @@ def ejecutar(url: str, corpus: Path, preguntas: dict, modelos_emb: list[str], mo
                 inicio = time.monotonic()
                 cargar_corpus(conexion, emb, corpus)
                 ingesta_s = time.monotonic() - inicio
-                filas, r = evaluar_busqueda(conexion, emb, preguntas, titulos, nombre_emb)
+                filas, r = evaluar_busqueda(conexion, emb, preguntas, titulos, nombre_emb,
+                                            config.umbral_distancia if nombre_emb == config.embeddings_modelo else None,
+                                            config.peso_lexico)
                 informe.filas += filas
                 informe.embeddings.append(ResultadoEmbeddings(
                     nombre_emb, LICENCIAS.get(nombre_emb, "por verificar"), round(carga_s, 1), round(ram_emb),

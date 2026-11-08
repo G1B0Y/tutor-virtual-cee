@@ -41,10 +41,12 @@ class Configuracion(BaseSettings):
     # Al arrancar la API, cargar en segundo plano el modelo de embeddings y el de lenguaje
     # (la primera carga en CPU puede tardar minutos).
     precargar_llm: bool = True
-    # Fuentes: solo los fragmentos casi tan cercanos como el mejor (mejor distancia + este margen).
-    # Va en la escala del modelo de embeddings: con e5-small (dentro ~0,12, fuera ~0,18) 0.10 citaba 4 páginas
-    # en vez de 1 o 2. 0.03 es provisional (proporcional al 0.10 que servía con MiniLM); falta calibrarlo.
-    margen_fuentes: float = 0.03
+    # Búsqueda híbrida (app/rag/busqueda.py, 08/11/2026): puntaje = v (cercanía por significado, 0 a 1) +
+    # PESO_LEXICO × L (palabras de la pregunta que tiene el fragmento, pesadas por lo raras que son, 0 a 1).
+    peso_lexico: float = 1.0
+    # Fuentes: solo los fragmentos con un puntaje casi tan alto como el mejor (mejor − este margen). Reemplaza a
+    # MARGEN_FUENTES (en distancias de e5: 0.03), que ya no se usa. Provisional: falta calibrarlo con el benchmark.
+    margen_puntaje: float = 0.4
     # Control de respaldo (app/rag/respaldo.py): parte mínima de las palabras con contenido de cada oración de la
     # respuesta que debe estar en los documentos o la pregunta; si no, la oración se quita. Los elementos de una lista
     # deben aparecer como frase en los documentos. Regla de Alfredo (08/11/2026): no inventar nada.

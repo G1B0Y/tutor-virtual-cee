@@ -26,3 +26,25 @@ def test_el_corpus_complementario_se_carga_junto_al_de_prueba_y_se_puede_retirar
     # Volver a cargarlo crea una versión nueva y vigente (el mismo archivo no se rechaza).
     assert all("versión 2 cargada" in m for m in cargar_corpus(db, EmbeddingsHash(), complementario))
     assert estado(db)[0] == f"Documentos vigentes: {antes + 12}"
+
+
+def test_la_busqueda_hibrida_distingue_cpi_de_cp_y_se_actualiza_al_retirar(db):
+    """08/11/2026: con los 18 documentos, "¿Qué indica un CPI menor que 1?" traía el Cp de Lean y el modelo respondió
+    mal. Las palabras raras de la pregunta (cpi) ahora pesan en el orden."""
+    from app.rag.busqueda import buscar_fragmentos
+
+    complementario = CORPUS.parent / "complementario"
+    emb = EmbeddingsHash()
+    cargar_corpus(db, emb, CORPUS)
+    cargar_corpus(db, emb, complementario)
+    pregunta = "¿Qué indica un CPI menor que 1?"
+    vector = emb.codificar([pregunta], es_consulta=True)[0]
+    top = buscar_fragmentos(db, vector, 4, texto=pregunta, umbral=2.0)
+    # El temario de prueba de PMBOK también lo explica ("Un CPI menor que 1 indica que el proyecto gasta más…").
+    assert "PMBOK" in top[0].titulo and "CPI" in top[0].texto
+    assert any(f.titulo.startswith("Gestión de Proyectos con el PMBOK – Unidad 3") for f in top)
+    assert [f.puntaje for f in top] == sorted((f.puntaje for f in top), reverse=True)
+
+    retirar_corpus(db, complementario)  # el índice de palabras se rehace solo
+    assert all("(material complementario)" not in f.titulo
+               for f in buscar_fragmentos(db, vector, 4, texto=pregunta, umbral=2.0))

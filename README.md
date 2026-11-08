@@ -170,6 +170,14 @@ Cada alumno puede hacer `LIMITE_POR_MINUTO` preguntas por minuto (8 por defecto;
 
 `data-api` es la dirección de la API y la del Campus tiene que estar en `ORIGENES_PERMITIDOS` del `.env`. Para probarlo sin Moodle: `npm run build`, luego `npx vite preview --outDir . --port 4173` y abre http://127.0.0.1:4173/ejemplo-moodle.html (una página con estilos agresivos, como los de un tema de Moodle, que no deben cambiar el chat).
 
+### 11. Por qué respondió (o no) una pregunta
+
+```bash
+docker compose exec api python -m app.diagnostico "¿Cómo se calcula el OEE?"
+```
+
+Muestra los fragmentos encontrados (distancia por significado y puntaje de la búsqueda híbrida), cuáles van al modelo, la respuesta del modelo tal cual y lo que deja el control de respaldo. No guarda nada. Con `--sin-llm` solo hace la búsqueda. Sirve para calibrar `UMBRAL_DISTANCIA`, `PESO_LEXICO`, `MARGEN_PUNTAJE` y `MINIMO_RESPALDO` en el `.env`.
+
 ### Comandos
 
 | Qué | Comando |

@@ -110,12 +110,13 @@ def es_seguimiento(pregunta: str) -> bool:
 
 
 def seleccionar(encontrados: list[FragmentoEncontrado], umbral: float, margen: float) -> list[FragmentoEncontrado]:
-    """Fragmentos bajo el umbral y casi tan cercanos como el mejor: son los que se dan al modelo y se citan."""
+    """Fragmentos bajo el umbral de distancia y con un puntaje casi tan alto como el mejor (búsqueda híbrida):
+    son los que se dan al modelo y se citan."""
     utiles = [f for f in encontrados if f.distancia <= umbral]
     if not utiles:
         return []
-    mejor = min(f.distancia for f in utiles)
-    return [f for f in utiles if f.distancia <= mejor + margen]
+    mejor = max(f.puntaje for f in utiles)
+    return sorted([f for f in utiles if f.puntaje >= mejor - margen], key=lambda f: f.puntaje, reverse=True)
 
 
 def _registrar(conexion: psycopg.Connection, r: Respuesta, pregunta: str, modelo: str | None,
@@ -183,8 +184,11 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     if faq and faq.distancia <= config.umbral_faq:
         return terminar(Respuesta(FAQ, faq.respuesta, [Fuente(faq.fuente or "Preguntas frecuentes del CEE", None)]))
 
-    encontrados = buscar_fragmentos(conexion, vector, config.fragmentos_por_consulta)
-    utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
+    def buscar(v: list[float], texto: str, limite: int, titulo: str | None = None) -> list[FragmentoEncontrado]:
+        return buscar_fragmentos(conexion, v, limite, titulo, texto, config.umbral_distancia, config.peso_lexico)
+
+    encontrados = buscar(vector, pregunta, config.fragmentos_por_consulta)
+    utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_puntaje)
     contexto = None
     if not utiles:
         utiles = _por_sigla(conexion, vector, pregunta)  # antes que el seguimiento: la sigla dice dónde buscar
@@ -196,17 +200,18 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         # la pregunta anterior. Se busca solo en él para no mezclar cursos.
         documento = documento_anterior
         if not documento and anterior:
-            previo = buscar_fragmentos(conexion, emb.codificar([texto_para_buscar(anterior)], es_consulta=True)[0], 1)
+            previo = buscar(emb.codificar([texto_para_buscar(anterior)], es_consulta=True)[0], anterior, 1)
             documento = previo[0].titulo if previo and previo[0].distancia <= config.umbral_distancia else None
         texto = f"{texto_para_buscar(anterior)}. {texto_para_buscar(pregunta)}" if anterior else texto_para_buscar(pregunta)
         juntas = emb.codificar([texto], es_consulta=True)[0]
-        en_documento = seleccionar(buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta, documento),
-                                   config.umbral_distancia, config.margen_fuentes) if documento else []
+        en_documento = seleccionar(buscar(juntas, f"{anterior or ''} {pregunta}", config.fragmentos_por_consulta,
+                                          documento),
+                                   config.umbral_distancia, config.margen_puntaje) if documento else []
         if en_documento:
             utiles, contexto = en_documento, anterior
         elif not utiles:
-            utiles = seleccionar(buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta),
-                                 config.umbral_distancia, config.margen_fuentes)
+            utiles = seleccionar(buscar(juntas, f"{anterior or ''} {pregunta}", config.fragmentos_por_consulta),
+                                 config.umbral_distancia, config.margen_puntaje)
             contexto = anterior if utiles else None
     utiles = _con_unidad_pedida(conexion, vector, pregunta, utiles)
     if not utiles:

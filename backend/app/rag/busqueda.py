@@ -1,5 +1,20 @@
-"""Búsqueda por similitud en pgvector (solo material vigente)."""
+"""Búsqueda en el material vigente: por significado (pgvector) y por las palabras de la pregunta (híbrida).
 
+Con 18 documentos (08/11/2026, corpus complementario) la búsqueda por significado sola confundía siglas parecidas
+("¿Qué indica un CPI menor que 1?" traía el Cp de capacidad de procesos y el modelo respondió mal) y dejaba el
+fragmento correcto fuera de los 4 primeros ("project charter", "PERT"). Por eso cada fragmento recibe un puntaje que
+suma las dos cosas:
+- `v`: qué tan cerca está por significado, de 1 (el más cercano) a 0 (en el umbral).
+- `L`: qué parte de las palabras de la pregunta tiene, pesadas por lo raras que son en el material (IDF): "cpi",
+  "charter" u "oee" pesan mucho; "proceso" o "calidad", poco. Va de 0 a 1.
+El umbral de distancia sigue siendo el mismo: un fragmento lejano por significado no entra aunque tenga las palabras
+(así las preguntas de fuera siguen sin encontrar nada).
+"""
+
+import math
+import re
+import threading
+import unicodedata
 from dataclasses import dataclass
 
 import psycopg
@@ -13,6 +28,7 @@ class FragmentoEncontrado:
     titulo: str
     pagina: int | None
     distancia: float
+    puntaje: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -23,9 +39,127 @@ class FaqEncontrada:
     distancia: float
 
 
+# Palabras que no ayudan a encontrar el fragmento (artículos, preposiciones, verbos de pregunta).
+_VACIAS = set("""
+    que qué cual cuales cuál cuáles como cómo cuando cuándo donde dónde quien quién quienes cuanto cuanta cuantos
+    cuantas por para con sin sobre entre desde hasta los las del una uno unos unas este esta estos estas ese esa eso
+    esos esas aquel son ser fue está estan están hay tiene tienen hace hacen puede pueden debe deben más mas menos
+    muy pero porque también tambien según segun cada todo toda todos todas otro otra otros otras mismo misma
+    explica explícame explicame dime dame decir significa significan define definir definición definicion
+    calcula calcular calculo cálculo sirve sirven usa usan utiliza consiste llama llaman cuál curso cursos tema
+    temas unidad módulo modulo hola gracias favor quiero saber podrías podrias puedes
+""".split())
+
+
+def _sin_tildes(texto: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFKD", texto.lower()) if not unicodedata.combining(c))
+
+
+def terminos(texto: str) -> list[str]:
+    """Raíces (6 letras) de las palabras que sirven para buscar, sin tildes ni repetidas. Se quedan las siglas de 3
+    letras o más ("cpi", "oee", "eoq"); "cp" no, así "CPI" no se confunde con "Cp"."""
+    vistos: list[str] = []
+    for palabra in re.findall(r"[a-zñ0-9]+", _sin_tildes(texto)):
+        if len(palabra) < 3 or palabra.isdigit() or palabra in _VACIAS_SIN_TILDES:
+            continue
+        raiz = palabra[:6]
+        if raiz not in vistos:
+            vistos.append(raiz)
+    return vistos
+
+
+_VACIAS_SIN_TILDES = {_sin_tildes(p) for p in _VACIAS}
+
+
+class IndiceLexico:
+    """Raíces de cada fragmento vigente y en cuántos fragmentos aparece cada raíz (para el IDF)."""
+
+    def __init__(self, filas: list[tuple[int, str, str]]):
+        self.titulos = {i: titulo for i, titulo, _ in filas}
+        self.raices = {i: set(terminos(texto)) for i, _, texto in filas}
+        self.frecuencia: dict[str, int] = {}
+        for raices in self.raices.values():
+            for r in raices:
+                self.frecuencia[r] = self.frecuencia.get(r, 0) + 1
+
+    def idf(self, raiz: str) -> float:
+        n = len(self.raices)
+        return math.log((n + 1) / (self.frecuencia.get(raiz, 0) + 0.5))
+
+    def puntajes(self, consulta: list[str], titulo: str | None = None) -> dict[int, float]:
+        """L de cada fragmento que tiene alguna palabra de la consulta (0 a 1)."""
+        pesos = {r: self.idf(r) for r in consulta}
+        total = sum(pesos.values())
+        if not total:
+            return {}
+        resultado = {}
+        for i, raices in self.raices.items():
+            if titulo is not None and self.titulos[i] != titulo:
+                continue
+            suma = sum(p for r, p in pesos.items() if r in raices)
+            if suma:
+                resultado[i] = suma / total
+        return resultado
+
+
+_indice: tuple[tuple, IndiceLexico] | None = None
+_candado_indice = threading.Lock()
+
+
+def indice_lexico(conexion: psycopg.Connection) -> IndiceLexico:
+    """Se arma una vez y se rehace solo si cambió el material vigente (carga, reemplazo o retiro)."""
+    global _indice
+    firma = conexion.execute(
+        "SELECT count(*), coalesce(max(id), 0), coalesce(sum(id), 0) FROM fragmentos_vigentes").fetchone()
+    with _candado_indice:
+        if _indice is None or _indice[0] != tuple(firma):
+            filas = conexion.execute("SELECT id, titulo, texto FROM fragmentos_vigentes").fetchall()
+            _indice = (tuple(firma), IndiceLexico(filas))
+        return _indice[1]
+
+
 def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite: int,
-                      titulo: str | None = None) -> list[FragmentoEncontrado]:
-    """`titulo`: solo fragmentos de ese documento (seguimientos: "ese curso" es el de la pregunta anterior)."""
+                      titulo: str | None = None, texto: str | None = None, umbral: float | None = None,
+                      peso_lexico: float = 1.0, candidatos: int = 20) -> list[FragmentoEncontrado]:
+    """`titulo`: solo fragmentos de ese documento (seguimientos: "ese curso" es el de la pregunta anterior).
+    Con `texto` (la pregunta) y `umbral`, búsqueda híbrida: ordena por v + peso_lexico × L (ver arriba) los
+    `candidatos` más cercanos por significado y los que más palabras de la pregunta tienen. Sin `texto`, solo por
+    distancia (como antes)."""
+    if texto is None or umbral is None:
+        return _por_distancia(conexion, vector, limite, titulo)
+    cercanos = conexion.execute(
+        """SELECT id, texto, titulo, pagina, embedding <=> %s::vector AS distancia
+             FROM fragmentos_vigentes
+            WHERE %s::text IS NULL OR titulo = %s
+            ORDER BY distancia
+            LIMIT %s""",
+        (como_vector(vector), titulo, titulo, candidatos),
+    ).fetchall()
+    lexicos = indice_lexico(conexion).puntajes(terminos(texto), titulo)
+    mejores = sorted(lexicos, key=lexicos.get, reverse=True)[:candidatos]
+    faltan = [i for i in mejores if i not in {f[0] for f in cercanos}]
+    if faltan:
+        cercanos += conexion.execute(
+            """SELECT id, texto, titulo, pagina, embedding <=> %s::vector AS distancia
+                 FROM fragmentos_vigentes WHERE id = ANY(%s)""",
+            (como_vector(vector), faltan),
+        ).fetchall()
+    dentro = [float(f[4]) for f in cercanos if float(f[4]) <= umbral]
+    mas_cerca = min(dentro) if dentro else umbral
+    escala = umbral - mas_cerca
+
+    def puntaje(distancia: float, i: int) -> float:
+        v = (umbral - distancia) / escala if escala > 0 else (1.0 if distancia <= umbral else 0.0)
+        return v + peso_lexico * lexicos.get(i, 0.0)
+
+    encontrados = [FragmentoEncontrado(t, ti, p, float(d), puntaje(float(d), i)) for i, t, ti, p, d in cercanos]
+    # Primero los que pasan el umbral; entre ellos, por puntaje.
+    encontrados.sort(key=lambda f: (f.distancia <= umbral, f.puntaje), reverse=True)
+    return encontrados[:limite]
+
+
+def _por_distancia(conexion: psycopg.Connection, vector: list[float], limite: int,
+                   titulo: str | None) -> list[FragmentoEncontrado]:
     filas = conexion.execute(
         """SELECT texto, titulo, pagina, embedding <=> %s::vector AS distancia
              FROM fragmentos_vigentes

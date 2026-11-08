@@ -159,3 +159,45 @@ def test_clasificacion_abc_correcta_pasa_con_el_fragmento_real():
     assert revisar(lista, [visto], pregunta, MINIMO) == (lista, "")
     assert revisar(oracion, [visto], pregunta, MINIMO) == (oracion, "")
     assert revisar(oracion, visto, pregunta, MINIMO) == (oracion, "")  # también con un solo texto
+
+
+# Fragmentos reales del corpus complementario (08/11/2026): con 18 documentos el tutor dijo "no encontré" a OEE y
+# PERT aunque estaban. El control partía la fórmula "(4 + 4×6 + 14) / 6" como si "14)" fuera un ítem y pedía
+# "estimación pesimista" pegado, cuando el documento dice "la estimación optimista (O), la más probable (M) y la
+# pesimista (P)".
+OEE = ("8. Eficiencia general de los equipos (OEE) El OEE (Overall Equipment Effectiveness) mide qué parte del tiempo "
+       "planificado un equipo produce piezas buenas a la velocidad ideal: OEE = disponibilidad × rendimiento × "
+       "calidad.  Disponibilidad: tiempo de operación / tiempo planificado de producción.  Rendimiento: (tiempo de "
+       "ciclo ideal × unidades producidas) / tiempo de operación.  Calidad: unidades buenas / unidades producidas.")
+PERT = ("Estimación de tres valores: considera la estimación optimista (O), la más probable (M) y la pesimista (P). "
+        "Distribución beta (PERT): duración esperada = (O + 4M + P) / 6 y desviación estándar = (P − O) / 6. "
+        "Ejemplo: con O = 4 días, M = 6 días y P = 14 días, la duración PERT es (4 + 24 + 14) / 6 = 7 días.")
+
+
+def test_lista_con_formulas_y_comentario_en_otra_linea_pasa():
+    respuesta = ("Para calcular la duración PERT:\n1. Estimación optimista (O): 4 días\n"
+                 "2. Estimación más probable (M): 6 días\n3. Estimación pesimista (P): 14 días\n"
+                 "Duración esperada = (4 + 4×6 + 14) / 6 = 7 días.")
+    texto, motivo = revisar(respuesta, [PERT], "¿Cómo se calcula la duración PERT?")
+    assert texto is not None and "3. Estimación pesimista (P): 14 días" in texto
+    assert "Duración esperada" in texto
+
+
+def test_elementos_con_igual_y_aclaracion_entre_parentesis_pasan():
+    con_igual = ("- Disponibilidad = tiempo de operación / tiempo planificado de producción\n"
+                 "- Rendimiento = (tiempo de ciclo ideal × unidades producidas) / tiempo de operación\n"
+                 "- Calidad = unidades buenas / unidades producidas")
+    texto, _ = revisar(con_igual, [OEE], "¿Cómo se calcula el OEE?")
+    assert texto == con_igual
+    con_ingles = ("El OEE es disponibilidad × rendimiento × calidad.\n1. Disponibilidad (Availability): tiempo de "
+                  "operación / tiempo planificado de producción\n2. Rendimiento (Performance): (tiempo de ciclo ideal "
+                  "× unidades producidas) / tiempo de operación\n3. Calidad (Quality): unidades buenas / unidades "
+                  "producidas")
+    texto, _ = revisar(con_ingles, [OEE], "¿Cómo se calcula el OEE?")
+    assert texto is not None and texto.count("\n") == 3
+
+
+def test_lista_inventada_con_formulas_sigue_descartada():
+    inventada = ("1. Productividad (P): piezas por hora\n2. Eficiencia energética: kWh por pieza\n"
+                 "3. Tasa de rechazo: (piezas malas / piezas totales) - 1")
+    assert revisar(inventada, [OEE], "¿Cómo se calcula el OEE?")[0] is None

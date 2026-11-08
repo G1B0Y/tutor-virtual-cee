@@ -108,17 +108,46 @@ def test_prompt_pide_no_agregar_nada_ni_usar_latex():
     assert "sin LaTeX" in INSTRUCCIONES
 
 
-def test_seleccionar_cita_solo_los_fragmentos_cercanos_al_mejor():
-    """Para "¿cuántas horas dura el programa?" se citaban 4 fuentes cuando bastaba una (01/11/2026)."""
+def test_seleccionar_cita_solo_los_fragmentos_con_puntaje_cercano_al_mejor():
+    """Para "¿cuántas horas dura el programa?" se citaban 4 fuentes cuando bastaba una (01/11/2026).
+    Desde el 08/11/2026 el margen es sobre el puntaje de la búsqueda híbrida, y el umbral sigue siendo de distancia."""
     from app.consulta import seleccionar
 
-    def frag(titulo, distancia):
-        return FragmentoEncontrado(titulo=titulo, pagina=1, texto="x", distancia=distancia)
+    def frag(titulo, distancia, puntaje):
+        return FragmentoEncontrado(titulo=titulo, pagina=1, texto="x", distancia=distancia, puntaje=puntaje)
 
-    encontrados = [frag("Temario", 0.20), frag("Temario p2", 0.27), frag("Reglamento", 0.45), frag("Lejano", 0.70)]
-    elegidos = seleccionar(encontrados, umbral=0.55, margen=0.10)
+    encontrados = [frag("Temario", 0.20, 1.6), frag("Temario p2", 0.27, 1.3), frag("Reglamento", 0.45, 0.6),
+                   frag("Lejano con las palabras", 0.70, 1.9)]
+    elegidos = seleccionar(encontrados, umbral=0.55, margen=0.4)
     assert [f.titulo for f in elegidos] == ["Temario", "Temario p2"]
-    assert seleccionar([frag("Lejano", 0.70)], umbral=0.55, margen=0.10) == []
+    assert seleccionar([frag("Lejano", 0.70, 2.0)], umbral=0.55, margen=0.4) == []
+
+
+def test_terminos_conservan_las_siglas_y_quitan_las_palabras_de_pregunta():
+    from app.rag.busqueda import terminos
+
+    assert terminos("¿Qué indica un CPI menor que 1?") == ["indica", "cpi", "menor"]
+    assert terminos("¿Cómo se calcula el OEE?") == ["oee"]
+    assert terminos("matriz de poder e INTERÉS") == ["matriz", "poder", "intere"]
+    assert "cp" not in terminos("El Cp de un proceso")  # así CPI no se confunde con Cp
+
+
+def test_indice_lexico_pesa_mas_las_palabras_raras():
+    """"¿Qué indica un CPI menor que 1?" traía el Cp (capacidad de procesos), que también dice "menor que 1",
+    y el modelo respondió mal (08/11/2026). "cpi" está en un solo fragmento y pesa más que "menor"."""
+    from app.rag.busqueda import IndiceLexico, terminos
+
+    indice = IndiceLexico([
+        (1, "Lean U3", "Si el Cp es menor que 1, el proceso no es capaz. Un valor menor indica variación."),
+        (2, "PMBOK U3", "CPI = EV / AC. Menor que 1 = se gasta más de lo presupuestado."),
+        (3, "Cadena M2", "Un error menor que el anterior indica mejora."),
+        (4, "Cadena M4", "La rotación de inventario indica cuántas veces se vende."),
+    ])
+    puntajes = indice.puntajes(terminos("¿Qué indica un CPI menor que 1?"))
+    assert max(puntajes, key=puntajes.get) == 2
+    assert puntajes[2] > 0.7 > puntajes[1]
+    assert set(indice.puntajes(terminos("¿Qué indica un CPI?"), titulo="Lean U3")) == {1}  # solo ese documento
+    assert indice.puntajes(terminos("¿Quién ganó el mundial?")) == {}
 
 
 def test_precargar_pide_el_modelo_a_ollama_y_no_falla_si_esta_caido(monkeypatch):
