@@ -118,3 +118,27 @@ def test_primera_oracion_sin_respaldo_se_abstiene():
     relleno = ("El Kaizen es una filosofía japonesa de mejora continua creada por Masaaki Imai. Se relaciona con el "
                "Pensamiento Lean, los 8 desperdicios y las 5S.")
     assert revisar(relleno, [TEMARIO_LEAN], "que es kaizen", MINIMO)[0] is None
+
+
+SEPARATA_INVENTARIOS = ("2. Clasificación ABC El método ABC clasifica los artículos según su participación en el valor "
+                        "anual del consumo, aplicando el principio de Pareto. Los artículos A representan aproximadamente "
+                        "el 80 % del valor y alrededor del 20 % de los ítems; los B, cerca del 15 % del valor; y los C, "
+                        "el 5 % restante del valor pero la mayor cantidad de ítems.")
+
+
+def test_cifras_que_no_estan_en_los_documentos_se_quitan():
+    """Benchmark del 08/11/2026: granite inventó el 10 % y el 5 % de los ítems para los artículos B y C."""
+    abc = ("La clasificación ABC de inventarios es un método que clasifica los artículos según su participación en el "
+           "valor anual del consumo. Se aplica el principio de Pareto, que establece que aproximadamente el 80% del "
+           "valor y el 20% de los ítems corresponden a los artículos A, el 15% del valor y el 10% de los ítems a los "
+           "artículos B, y el 5% del valor y el 5% de los ítems a los artículos C.")
+    texto, _ = revisar(abc, [SEPARATA_INVENTARIOS], "¿En qué consiste la clasificación ABC de inventarios?", MINIMO)
+    assert texto == ("La clasificación ABC de inventarios es un método que clasifica los artículos según su "
+                     "participación en el valor anual del consumo.")
+    correcta = "Los artículos A representan aproximadamente el 80 % del valor y alrededor del 20 % de los ítems."
+    assert revisar(correcta, [SEPARATA_INVENTARIOS], "", MINIMO) == (correcta, "")
+
+
+def test_cifra_de_la_pregunta_vale():
+    texto = "La Unidad 1 incluye los 8 desperdicios."
+    assert revisar(texto, [TEMARIO_LEAN], DESPERDICIOS, MINIMO) == (texto, "")

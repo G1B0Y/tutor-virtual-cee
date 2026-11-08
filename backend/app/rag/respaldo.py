@@ -16,6 +16,8 @@ Por eso la respuesta se revisa por partes, sin depender del modelo:
   si está, se queda con las oraciones respaldadas ("¿Qué es un VSM?" queda solo con la primera). En una lista, se
   abstiene si se quitaron más de dos tercios. En una lista respaldada, las explicaciones y el
   comentario final que se quitan no cuentan para eso.
+- Toda cifra (porcentaje, horas, nota, fecha) tiene que estar en los documentos o en la pregunta: si no, se quita
+  la oración o el elemento. Granite cambió los porcentajes de la clasificación ABC ("el 10 % de los ítems").
 - Los títulos de los documentos cuentan como parte de ellos ("Lean Six Sigma Green Belt").
 """
 
@@ -40,6 +42,11 @@ def _palabras(texto: str) -> list[str]:
     """Raíces (5 letras) de las palabras con contenido, en orden."""
     sin_tildes = "".join(c for c in unicodedata.normalize("NFKD", texto.lower()) if not unicodedata.combining(c))
     return [p[:5] for p in re.findall(r"[a-zñ]{4,}", sin_tildes) if p not in _VACIAS]
+
+
+def _numeros(texto: str) -> set[str]:
+    """Cifras del texto ("80 %", "4,5", "2026"), con coma o punto decimal igualados."""
+    return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", texto)}
 
 
 def _raices(texto: str) -> set[str]:
@@ -86,8 +93,15 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
     """Devuelve (texto con solo lo respaldado, motivo). Texto None = abstenerse."""
     fuentes = [_palabras(f) for f in fragmentos] + [_palabras(pregunta)]
     conocidas = set().union(*fuentes)
+    cifras = _numeros(" ".join(fragmentos) + " " + pregunta)
+
+    def cifras_ok(texto: str) -> bool:
+        # Una cifra que no está en los documentos es el error más grave para un alumno (porcentajes, horas, notas).
+        return _numeros(texto) <= cifras
 
     def oracion_ok(texto: str) -> bool:
+        if not cifras_ok(texto):
+            return False
         propias = _raices(texto)
         return not propias or len(propias & conocidas) / len(propias) >= minimo
 
@@ -130,7 +144,7 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
                 cabeza, explicacion = item, ""
             peso = len(_raices(item))
             total += peso
-            if not _frase_en(_palabras(cabeza), fuentes):
+            if not _frase_en(_palabras(cabeza), fuentes) or not cifras_ok(cabeza):
                 malos += 1
                 quitadas += peso
                 continue

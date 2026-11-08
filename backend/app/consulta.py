@@ -229,8 +229,10 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         turno.liberar()
 
     if not es_sin_evidencia(texto):
-        revisado, motivo = revisar(limpiar_respuesta(texto), [f"{f.titulo}. {f.texto}" for f in utiles],
-                                   f"{anterior or ''} {pregunta}", config.minimo_respaldo)
+        # Lo mismo que vio el modelo: número, título y página de cada documento (puede citarlos) y su texto.
+        vistos = [f"[{n}] {f.titulo}, página {f.pagina or ''}. {f.texto}" for n, f in enumerate(utiles, 1)]
+        revisado, motivo = revisar(limpiar_respuesta(texto), vistos,
+                                   f"{anterior or ''} {pregunta} {texto_para_buscar(pregunta)}", config.minimo_respaldo)
         if revisado is None:
             registro.warning("Respuesta descartada: %s", motivo)
             texto = SIN_EVIDENCIA_DEL_MODELO
