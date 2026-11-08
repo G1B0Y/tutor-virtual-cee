@@ -22,13 +22,17 @@ CONFIG = Configuracion(embeddings_proveedor="hash", umbral_distancia=0.9, umbral
 class LLMFalso:
     nombre = "falso"
 
-    def __init__(self, texto="Respuesta redactada.", falla=False):
+    """Sin `texto`, responde copiando los documentos que recibió (así pasa el control de respaldo)."""
+
+    def __init__(self, texto=None, falla=False):
         self.texto, self.falla, self.recibido = texto, falla, None
 
     def generar(self, mensajes):
         self.recibido = mensajes
         if self.falla:
             raise ErrorLLM("Ollama apagado")
+        if self.texto is None:
+            return mensajes[-1]["content"].split("<documentos>")[1].split("</documentos>")[0].strip()
         return self.texto
 
 
@@ -70,7 +74,7 @@ def test_pregunta_con_evidencia_pasa_por_el_llm_y_cita_fuentes(con_corpus):
     llm = LLMFalso()
     r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG)
     assert r.estado == RESPONDIDA
-    assert r.respuesta == "Respuesta redactada."
+    assert r.respuesta.startswith("[1] ")
     assert any("Gestión de Inventarios" in f.titulo for f in r.fuentes)
     assert "inventario de seguridad" in llm.recibido[1]["content"].lower()
 
@@ -226,3 +230,16 @@ def test_si_el_modelo_se_abstiene_dice_que_material_reviso(con_corpus):
     assert r.estado == SIN_EVIDENCIA
     assert r.respuesta.startswith("No encontré la respuesta en los materiales del CEE (lo más cercano que revisé: ")
     assert r.fuentes == []
+
+
+def test_respuesta_inventada_se_descarta_aunque_el_modelo_no_se_abstenga(con_corpus):
+    """granite listó "los 8 desperdicios" de memoria; el temario solo los nombra (08/11/2026)."""
+    from tests.test_respaldo import INVENTADA
+
+    r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA),
+                  Turno(3), CONFIG)
+    assert r.estado == SIN_EVIDENCIA
+    assert "desperdicios son" not in r.respuesta
+    assert con_corpus.execute(
+        "SELECT count(*) FROM consultas_pendientes WHERE pregunta = '¿Cuáles son los 8 desperdicios de Lean?'"
+    ).fetchone()[0] == 1

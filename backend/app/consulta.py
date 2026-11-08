@@ -1,5 +1,6 @@
 """Responde una pregunta del alumno: FAQ → búsqueda → LLM, con abstención y degradación controlada."""
 
+import logging
 import re
 import threading
 import time
@@ -12,7 +13,11 @@ from app.conversacion import respuesta_de_conversacion
 from app.rag.busqueda import FragmentoEncontrado, buscar_faq, buscar_fragmentos, fragmentos_que_dicen
 from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
+from app.rag.prompt import SIN_EVIDENCIA as SIN_EVIDENCIA_DEL_MODELO
 from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta
+from app.rag.respaldo import respaldo
+
+registro = logging.getLogger("tutor")
 
 # Estados que entiende el chat.
 RESPONDIDA = "respondida"          # el LLM redactó con los documentos
@@ -181,6 +186,8 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     encontrados = buscar_fragmentos(conexion, vector, config.fragmentos_por_consulta)
     utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
     contexto = None
+    if not utiles:
+        utiles = _por_sigla(conexion, vector, pregunta)  # antes que el seguimiento: la sigla dice dónde buscar
     hay_anterior = bool(anterior or documento_anterior) and not (anterior and respuesta_de_conversacion(anterior))
     corta = len(pregunta.split()) <= 3  # "¿y el VSM?", "que es eso": casi siempre siguen la conversación
     if hay_anterior and (not utiles or es_seguimiento(pregunta) or (corta and documento_anterior)):
@@ -201,8 +208,6 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
             utiles = seleccionar(buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta),
                                  config.umbral_distancia, config.margen_fuentes)
             contexto = anterior if utiles else None
-    if not utiles:
-        utiles = _por_sigla(conexion, vector, pregunta)
     utiles = _con_unidad_pedida(conexion, vector, pregunta, utiles)
     if not utiles:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
@@ -223,6 +228,10 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     finally:
         turno.liberar()
 
+    respaldada = respaldo(limpiar_respuesta(texto), [f.texto for f in utiles], f"{anterior or ''} {pregunta}")
+    if not es_sin_evidencia(texto) and respaldada < config.minimo_respaldo:
+        registro.warning("Respuesta descartada: solo %.0f %% de sus palabras está en los documentos", respaldada * 100)
+        texto = SIN_EVIDENCIA_DEL_MODELO
     if es_sin_evidencia(texto):
         # Los documentos se encontraron pero no traen la respuesta (p. ej. el temario nombra "los 8 desperdicios"
         # sin decir cuáles son): se dice qué se revisó, para que el alumno sepa dónde buscar (08/11/2026).

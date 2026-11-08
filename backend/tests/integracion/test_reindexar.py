@@ -22,7 +22,7 @@ class LLMFalso:
     nombre = "falso"
 
     def generar(self, mensajes):
-        return "Respuesta redactada."
+        return mensajes[-1]["content"].split("<documentos>")[1].split("</documentos>")[0].strip()
 
 
 def _vectores(db, tabla):

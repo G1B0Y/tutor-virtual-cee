@@ -55,6 +55,7 @@ services:
       UMBRAL_DISTANCIA: ${UMBRAL_DISTANCIA:-0.18}
       UMBRAL_FAQ: ${UMBRAL_FAQ:-0.10}
       MARGEN_FUENTES: ${MARGEN_FUENTES:-0.03}
+      MINIMO_RESPALDO: ${MINIMO_RESPALDO:-0.4}
       EMBEDDINGS_PROVEEDOR: ${EMBEDDINGS_PROVEEDOR:-sentence-transformers}
     volumes:
       # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.

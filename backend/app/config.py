@@ -45,6 +45,9 @@ class Configuracion(BaseSettings):
     # Va en la escala del modelo de embeddings: con e5-small (dentro ~0,12, fuera ~0,18) 0.10 citaba 4 páginas
     # en vez de 1 o 2. 0.03 es provisional (proporcional al 0.10 que servía con MiniLM); falta calibrarlo.
     margen_fuentes: float = 0.03
+    # Parte mínima de las palabras de la respuesta que debe estar en los documentos (o la pregunta); si no, se
+    # descarta por inventada (app/rag/respaldo.py). 0.4 es provisional (08/11: lista inventada 0,21; respuestas correctas de granite 0,53–0,70): calibrar con el benchmark.
+    minimo_respaldo: float = 0.4
     # Canal humano: lo define el CEE (pendiente). Se muestra cuando el bot no puede responder.
     mensaje_derivacion: str = (
         "Dejé registrada tu consulta para que el equipo del CEE la revise. "
