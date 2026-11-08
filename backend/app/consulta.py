@@ -15,7 +15,7 @@ from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
 from app.rag.prompt import SIN_EVIDENCIA as SIN_EVIDENCIA_DEL_MODELO
 from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta
-from app.rag.respaldo import lista_sin_respaldo, respaldo
+from app.rag.respaldo import revisar
 
 registro = logging.getLogger("tutor")
 
@@ -229,14 +229,15 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         turno.liberar()
 
     if not es_sin_evidencia(texto):
-        limpia, textos, contexto_pregunta = limpiar_respuesta(texto), [f.texto for f in utiles], f"{anterior or ''} {pregunta}"
-        respaldada = respaldo(limpia, textos, contexto_pregunta)
-        if respaldada < config.minimo_respaldo:
-            registro.warning("Respuesta descartada: solo %.0f %% de sus palabras está en los documentos", respaldada * 100)
+        revisado, motivo = revisar(limpiar_respuesta(texto), [f"{f.titulo}. {f.texto}" for f in utiles],
+                                   f"{anterior or ''} {pregunta}", config.minimo_respaldo)
+        if revisado is None:
+            registro.warning("Respuesta descartada: %s", motivo)
             texto = SIN_EVIDENCIA_DEL_MODELO
-        elif lista_sin_respaldo(limpia, textos, contexto_pregunta):
-            registro.warning("Respuesta descartada: lista con elementos que no están en los documentos")
-            texto = SIN_EVIDENCIA_DEL_MODELO
+        else:
+            if motivo:
+                registro.info("Respuesta recortada: %s", motivo)
+            texto = revisado
     if es_sin_evidencia(texto):
         # Los documentos se encontraron pero no traen la respuesta (p. ej. el temario nombra "los 8 desperdicios"
         # sin decir cuáles son): se dice qué se revisó, para que el alumno sepa dónde buscar (08/11/2026).

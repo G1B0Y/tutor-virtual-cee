@@ -1,13 +1,20 @@
-"""Control de respaldo: ¿la respuesta del modelo sale de los documentos que se le dieron?
+"""Control de respaldo: lo que dice el tutor tiene que estar en los documentos que se le dieron al modelo.
 
-granite3.3:2b a veces no se abstiene cuando el documento solo nombra un tema: a "¿cuáles son los 8 desperdicios?"
-(el temario dice "los 8 desperdicios" sin listarlos) respondió una lista inventada (08/11/2026). Este control no
-depende del modelo: cuenta qué parte de las palabras con contenido de la respuesta aparece en los fragmentos o en
-la pregunta. Si es poca, la respuesta se descarta y el tutor se abstiene.
+Regla del proyecto (Alfredo, 08/11/2026): "no debería inventar nada de lo que no está en la información cargada".
+granite3.3:2b no la cumple siempre: a "¿cuáles son los 8 desperdicios?" (el temario los nombra sin listarlos)
+respondió tres listas inventadas distintas, y en respuestas correctas agrega frases propias ("Definir: identificar
+el problema…"). Contar palabras sueltas no sirve: las listas inventadas usaban palabras que sí están en otros
+documentos (inventario, defectos, tiempo de espera).
 
-La cuenta global no basta con las listas: la segunda lista inventada ("1. Exceso de producción… 2. Exceso de
-transporte…") usaba palabras del mismo tema que sí están en la separata (producción, defectos, calidad, Pareto).
-Por eso las enumeraciones se revisan ítem por ítem (`lista_sin_respaldo`).
+Por eso la respuesta se revisa por partes, sin depender del modelo:
+- Cada elemento de una lista (lo que va antes de ":") tiene que aparecer como frase en los documentos: sus palabras
+  con contenido seguidas, en ese orden ("mano de obra", "tiempo de espera"). Si más de un tercio no aparece, la lista
+  es inventada y el tutor se abstiene. Los que no aparecen se quitan.
+- Cada oración, y la explicación de cada elemento, se queda solo si al menos el 60 % (`MINIMO_RESPALDO`) de sus
+  palabras con contenido está en los documentos o en la pregunta; si no, se quita.
+- Si se quitó la mayor parte de la respuesta, el tutor se abstiene. En una lista respaldada, las explicaciones y el
+  comentario final que se quitan no cuentan para eso.
+- Los títulos de los documentos cuentan como parte de ellos ("Lean Six Sigma Green Belt").
 """
 
 import re
@@ -20,13 +27,21 @@ _VACIAS = set("""
     siguiente siguientes manera forma incluye incluyen trata tratan esta estan ser son sera seran hace hacen
     curso cursos tema temas unidad unidades documento documentos segun parte partes general importante clave
     claves alumno alumnos pregunta respuesta informacion materiales material programa siguiente ejemplo
+    refiere significa significan consiste utiliza utilizan permite permiten llama llaman conoce conocen
     """.split())
+
+_ITEM = re.compile(r"(?:^|\s)(\d{1,2}[.)]|[-•*])\s+")
+_ORACION = re.compile(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡])")
+
+
+def _palabras(texto: str) -> list[str]:
+    """Raíces (5 letras) de las palabras con contenido, en orden."""
+    sin_tildes = "".join(c for c in unicodedata.normalize("NFKD", texto.lower()) if not unicodedata.combining(c))
+    return [p[:5] for p in re.findall(r"[a-zñ]{4,}", sin_tildes) if p not in _VACIAS]
 
 
 def _raices(texto: str) -> set[str]:
-    sin_tildes = "".join(c for c in unicodedata.normalize("NFKD", texto.lower()) if not unicodedata.combining(c))
-    palabras = re.findall(r"[a-zñ]{4,}", sin_tildes)
-    return {p[:5] for p in palabras if p not in _VACIAS}
+    return set(_palabras(texto))
 
 
 def respaldo(respuesta: str, fragmentos: list[str], pregunta: str = "") -> float:
@@ -39,27 +54,94 @@ def respaldo(respuesta: str, fragmentos: list[str], pregunta: str = "") -> float
     return len(propias & fuente) / len(propias)
 
 
-_ITEM = re.compile(r"(?:^|\s)(?:\d{1,2}[.)]|[-•*])\s+")
+def _frase_en(frase: list[str], fuentes: list[list[str]]) -> bool:
+    """Las raíces de `frase` aparecen seguidas y en orden en alguna fuente (se tolera 1 palabra entre medio)."""
+    if not frase:
+        return True
+    for fuente in fuentes:
+        for inicio, raiz in enumerate(fuente):
+            if raiz != frase[0]:
+                continue
+            pos, ok = inicio, True
+            for siguiente in frase[1:]:
+                ventana = fuente[pos + 1: pos + 3]
+                if siguiente not in ventana:
+                    ok = False
+                    break
+                pos = pos + 1 + ventana.index(siguiente)
+            if ok:
+                return True
+    return False
 
 
 def items(respuesta: str) -> list[str]:
     """Ítems de una enumeración ("1. …  2. …" o "- …"), aunque vengan en una sola línea."""
     partes = _ITEM.split(respuesta)
-    return [p.strip() for p in partes[1:] if p.strip()] if len(partes) > 3 else []
+    return [p.strip() for p in partes[2::2] if p.strip()] if len(partes) > 6 else []
 
 
-def lista_sin_respaldo(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: float = 0.5) -> bool:
-    """True si la respuesta es una lista (3 ítems o más) y más de un tercio de sus ítems no sale de los documentos.
-    Cada ítem se mide solo por su comienzo (hasta ":" o 6 palabras): ahí está el elemento de la lista; lo que
-    sigue suele ser explicación."""
-    fuente = _raices(" ".join(fragmentos) + " " + pregunta)
-    lista = items(respuesta)
-    if len(lista) < 3:
-        return False
-    malos = 0
-    for item in lista:
-        cabeza = " ".join(item.split(":")[0].split()[:6])
-        propias = _raices(cabeza)
-        if propias and len(propias & fuente) / len(propias) < minimo:
-            malos += 1
-    return malos * 3 > len(lista)
+def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: float = 0.6) -> tuple[str | None, str]:
+    """Devuelve (texto con solo lo respaldado, motivo). Texto None = abstenerse."""
+    fuentes = [_palabras(f) for f in fragmentos] + [_palabras(pregunta)]
+    conocidas = set().union(*fuentes)
+
+    def oracion_ok(texto: str) -> bool:
+        propias = _raices(texto)
+        return not propias or len(propias & conocidas) / len(propias) >= minimo
+
+    partes = _ITEM.split(respuesta)
+    es_lista = len(partes) > 6  # 3 ítems o más
+    salida: list[str] = []
+    quitadas = total = 0
+
+    def agregar_oraciones(texto: str, cuenta: bool = True) -> None:
+        """`cuenta=False`: las oraciones sin respaldo se quitan pero no llevan a abstenerse."""
+        nonlocal quitadas, total
+        for oracion in _ORACION.split(texto.strip()):
+            if not oracion.strip():
+                continue
+            peso = len(_raices(oracion)) if cuenta else 0
+            total += peso
+            if oracion_ok(oracion):
+                salida.append(oracion.strip())
+            else:
+                quitadas += peso
+
+    if not es_lista:
+        agregar_oraciones(respuesta)
+    else:
+        agregar_oraciones(partes[0])
+        lista = list(zip(partes[1::2], partes[2::2]))
+        malos = 0
+        for n, (marca, item) in enumerate(lista):
+            item = item.strip()
+            resto = ""
+            if n == len(lista) - 1:  # tras el último ítem suele venir texto suelto
+                trozos = _ORACION.split(item, maxsplit=1)
+                item, resto = trozos[0], (trozos[1] if len(trozos) > 1 else "")
+            cabeza, _, explicacion = item.partition(":")
+            if len(cabeza.split()) > 6:
+                cabeza, explicacion = item, ""
+            peso = len(_raices(item))
+            total += peso
+            if not _frase_en(_palabras(cabeza), fuentes):
+                malos += 1
+                quitadas += peso
+                continue
+            if explicacion.strip() and not oracion_ok(explicacion):
+                # Se quita la explicación propia del modelo, pero el elemento sí está en los documentos: no cuenta
+                # para abstenerse ("Definir: identificar el problema…" → "Definir").
+                total -= len(_raices(explicacion))
+                explicacion = ""
+            salida.append(f"{marca} {cabeza.strip()}" + (f": {explicacion.strip()}" if explicacion.strip() else ""))
+            if resto:
+                # Comentario del modelo después de la lista ("Estas son las etapas…"): si no tiene respaldo se
+                # quita, pero la lista, que sí está en los documentos, se mantiene.
+                agregar_oraciones(resto, cuenta=False)
+        if malos * 3 > len(lista):
+            return None, f"lista con {malos} de {len(lista)} elementos que no están en los documentos"
+
+    if not salida or (total and quitadas / total > 0.5):
+        return None, f"{quitadas} de {total} palabras con contenido no están en los documentos"
+    texto = "\n".join(salida) if es_lista else " ".join(salida)
+    return texto, (f"se quitaron {quitadas} de {total} palabras sin respaldo" if quitadas else "")

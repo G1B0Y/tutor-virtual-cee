@@ -251,3 +251,15 @@ def test_lista_inventada_con_palabras_del_tema_tambien_se_descarta(con_corpus):
     r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA_2),
                   Turno(3), CONFIG)
     assert r.estado == SIN_EVIDENCIA
+
+
+def test_lista_inventada_en_seguimiento_se_descarta(con_corpus):
+    """Caso del chat de Alfredo (08/11/2026): tras preguntar por el primer tema de Six Sigma, "cuales son los 8
+    desperdicios" encontraba también Cadena de Suministro e Inventarios y granite armaba la lista con sus palabras."""
+    from tests.test_respaldo import INVENTADA_3
+
+    r = responder("cuales son los 8 desperdicios", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA_3), Turno(3),
+                  CONFIG, anterior="cual es el primer tema de sixsigma",
+                  documento_anterior="Temario – Lean Six Sigma Green Belt (PRUEBA)")
+    assert r.estado == SIN_EVIDENCIA
+    assert "Sobreproducción" not in r.respuesta
