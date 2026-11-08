@@ -91,6 +91,8 @@ def items(respuesta: str) -> list[str]:
 
 def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: float = 0.6) -> tuple[str | None, str]:
     """Devuelve (texto con solo lo respaldado, motivo). Texto None = abstenerse."""
+    if isinstance(fragmentos, str):  # un solo texto: sin esto se recorrería letra por letra y todo quedaría sin respaldo
+        fragmentos = [fragmentos]
     fuentes = [_palabras(f) for f in fragmentos] + [_palabras(pregunta)]
     conocidas = set().union(*fuentes)
     cifras = _numeros(" ".join(fragmentos) + " " + pregunta)

@@ -142,3 +142,20 @@ def test_cifras_que_no_estan_en_los_documentos_se_quitan():
 def test_cifra_de_la_pregunta_vale():
     texto = "La Unidad 1 incluye los 8 desperdicios."
     assert revisar(texto, [TEMARIO_LEAN], DESPERDICIOS, MINIMO) == (texto, "")
+
+
+def test_clasificacion_abc_correcta_pasa_con_el_fragmento_real():
+    """Texto del fragmento tal como lo extrae la ingesta en la PC de Alfredo, con el encabezado que ve el modelo."""
+    visto = ("[1] Separata del Módulo 3 – Gestión de Inventarios (PRUEBA), página 1. DOCUMENTO DE PRUEBA – contenido "
+             "ficticio para probar el Tutor Virtual. No es información oficial del CEE. Separata del Módulo 3 – Gestión "
+             "de Inventarios 1. ¿Por qué gestionar inventarios? " + SEPARATA_INVENTARIOS)
+    pregunta = "¿En qué consiste la clasificación ABC de inventarios?"
+    lista = ("La clasificación ABC clasifica los artículos según su participación en el valor anual del consumo, "
+             "aplicando el principio de Pareto:\n1. Artículos A: aproximadamente el 80 % del valor y alrededor del 20 % "
+             "de los ítems.\n2. Artículos B: cerca del 15 % del valor.\n3. Artículos C: el 5 % restante del valor pero "
+             "la mayor cantidad de ítems.")
+    oracion = ("La clasificación ABC de inventarios es un método que clasifica los artículos según su participación en "
+               "el valor anual del consumo.")
+    assert revisar(lista, [visto], pregunta, MINIMO) == (lista, "")
+    assert revisar(oracion, [visto], pregunta, MINIMO) == (oracion, "")
+    assert revisar(oracion, visto, pregunta, MINIMO) == (oracion, "")  # también con un solo texto
