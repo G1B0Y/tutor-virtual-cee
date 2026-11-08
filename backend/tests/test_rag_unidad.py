@@ -261,3 +261,19 @@ def test_es_seguimiento(pregunta, esperado):
     from app.consulta import es_seguimiento
 
     assert es_seguimiento(pregunta) is esperado
+
+
+def test_ordinales_en_numero_y_en_palabras_son_el_mismo_termino():
+    """La pregunta decía "PMBOK 8.ª edición" y el documento "Octava edición" (08/11/2026)."""
+    from app.rag.busqueda import terminos
+    assert "ord8" in terminos("principios del PMBOK 8.ª edición")
+    assert "ord8" in terminos("Octava edición (noviembre de 2025)")
+    assert "ord7" in terminos("la 7a edición") and "ord7" in terminos("séptima edición")
+    assert terminos("de 5 a 10 horas") == ["horas"]  # "5 a" no es "quinta"
+    assert terminos("las 5S") == ["5s"]
+
+
+def test_unir_fragmentos_sin_repetir_el_solape():
+    from app.consulta import _unir
+    assert _unir("Uno dice algo. Octava edición:", "Octava edición: reduce a 6.") == "Uno dice algo. Octava edición: reduce a 6."
+    assert _unir("Primero.", "Segundo.") == "Primero. Segundo."

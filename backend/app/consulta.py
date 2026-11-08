@@ -4,7 +4,7 @@ import logging
 import re
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import psycopg
 
@@ -161,20 +161,32 @@ def _con_unidad_pedida(conexion: psycopg.Connection, vector: list[float], pregun
     return extra + [f for f in utiles if f not in extra]
 
 
+def _unir(primero: str, segundo: str) -> str:
+    """Junta dos fragmentos seguidos sin repetir la oración que comparten (los fragmentos se solapan en una)."""
+    for k in range(min(len(primero), len(segundo), 400), 9, -1):
+        if primero.endswith(segundo[:k]):
+            return primero + segundo[k:]
+    return f"{primero} {segundo}"
+
+
 def _con_continuacion(conexion: psycopg.Connection, vector: list[float], pregunta: str,
                       utiles: list[FragmentoEncontrado]) -> list[FragmentoEncontrado]:
-    """Si el mejor fragmento termina hablando de lo que se pregunta, el tema sigue en el fragmento siguiente: lo
-    agrega. "Principios del PMBOK 8.ª edición": el fragmento terminaba en "Octava edición (noviembre de 2025):" y la
-    lista de principios estaba en el que sigue, que no llegaba al modelo (08/11/2026)."""
+    """Si el mejor fragmento termina hablando de lo que se pregunta o en ":" (una lista cortada), el tema sigue en el
+    fragmento siguiente: se le pega al mejor, como un solo texto. "Principios del PMBOK 8.ª edición": el fragmento
+    terminaba en "Octava edición (noviembre de 2025):" y la lista estaba en el que sigue (08/11/2026). Primero iba
+    como otro documento y granite igual respondía con los 12 principios de la séptima edición, que estaban en el
+    primero; juntos, la lista queda justo después de "Octava edición"."""
     if not utiles:
         return utiles
     mejor = utiles[0]
-    if not set(terminos(mejor.texto[-200:])) & set(terminos(pregunta)):
+    cola = mejor.texto[-200:]
+    if not cola.rstrip().endswith(":") and not set(terminos(cola)) & set(terminos(pregunta)):
         return utiles
     siguiente = siguiente_fragmento(conexion, vector, mejor)
-    if not siguiente or any((f.titulo, f.orden) == (siguiente.titulo, siguiente.orden) for f in utiles):
+    if not siguiente:
         return utiles
-    return [mejor, siguiente, *utiles[1:]]
+    unido = replace(mejor, texto=_unir(mejor.texto, siguiente.texto))
+    return [unido, *(f for f in utiles[1:] if (f.titulo, f.orden) != (siguiente.titulo, siguiente.orden))]
 
 
 def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm: LLM, turno: Turno,

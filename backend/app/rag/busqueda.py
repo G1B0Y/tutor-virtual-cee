@@ -56,11 +56,23 @@ def _sin_tildes(texto: str) -> str:
     return "".join(c for c in unicodedata.normalize("NFKD", texto.lower()) if not unicodedata.combining(c))
 
 
+_ORDINALES = {"primer": 1, "segund": 2, "tercer": 3, "cuart": 4, "quint": 5, "sext": 6, "septim": 7, "setim": 7,
+              "octav": 8, "noven": 9, "decim": 10, "undecim": 11, "duodecim": 12}
+_ORDINAL_EN_PALABRAS = re.compile(r"\b(" + "|".join(sorted(_ORDINALES, key=len, reverse=True)) + r")(?:o|a|os|as)?\b")
+
+
+def _ordinales(texto: str) -> str:
+    """"8.ª", "8a", "8vo" y "octava" pasan a ser la misma palabra ("ord8"): la pregunta decía "PMBOK 8.ª edición" y el
+    documento "Octava edición" (08/11/2026). Recibe el texto ya en minúsculas y sin tildes ("ª" queda como "a")."""
+    texto = re.sub(r"\b(\d{1,2})\.?(?:a|o|er|ra|ro|do|da|vo|va|to|ta|mo|ma|no|na)\b", r" ord\1 ", texto)
+    return _ORDINAL_EN_PALABRAS.sub(lambda m: f"ord{_ORDINALES[m.group(1)]}", texto)
+
+
 def terminos(texto: str) -> list[str]:
     """Raíces (6 letras) de las palabras que sirven para buscar, sin tildes ni repetidas. Se quedan las siglas de 3
     letras o más ("cpi", "oee", "eoq") y las de 2 con un número ("5s"); "cp" no, así "CPI" no se confunde con "Cp"."""
     vistos: list[str] = []
-    for palabra in re.findall(r"[a-zñ0-9]+", _sin_tildes(texto)):
+    for palabra in re.findall(r"[a-zñ0-9]+", _ordinales(_sin_tildes(texto))):
         corta_con_numero = len(palabra) == 2 and re.fullmatch(r"\d[a-zñ]|[a-zñ]\d", palabra)  # "5s", "6m"
         if (len(palabra) < 3 and not corta_con_numero) or palabra.isdigit() or palabra in _VACIAS_SIN_TILDES:
             continue

@@ -65,6 +65,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Control de respaldo sin el modelo (08/11): se quitan las frases y los elementos de lista que no están en los documentos; si la lista es inventada o queda poco, se abstiene (`app/rag/respaldo.py`).
 - [x] Probar el control de respaldo en la PC de Alfredo y repetir el benchmark del par elegido (08/11: 19/20, 10/10, 4,6 s).
 - [x] Búsqueda híbrida (significado + palabras de la pregunta con IDF) y comando `python -m app.diagnostico` (08/11), por los fallos con el corpus complementario (CPI/Cp, project charter, OEE, PERT). Falta calibrar `PESO_LEXICO` y `MARGEN_PUNTAJE` en la PC de Alfredo.
+- [x] Segundo intento con evidencia fuerte, fragmento siguiente pegado al mejor, ordinales ("8.ª" = "octava") y abstención con listas a medias (08/11; 8ebc978 en su PC: 20/20, 10/10, 5,1 s). Falta repetir las 21 preguntas con el último ajuste.
 - [ ] Verificar las licencias en la ficha oficial (RNF-23): e5-small (MIT) y granite3.3:2b (Apache 2.0).
 
 **Listo cuando:** recall@5 ≥ 80 % y hay un informe con los modelos elegidos y por qué.

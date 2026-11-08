@@ -224,3 +224,37 @@ def test_kanji_inventados_se_quitan_y_la_lista_inventada_se_descarta():
     inventada = ("1. Seiri (ソリ): Seguro\n2. Seiton (進取): Ordenar\n3. Shitsu (整理): Limpieza\n"
                  "4. Seiseki (定め): Control\n5. Shinshitsu (新しさ): Sustentación")
     assert revisar(inventada, [fragmento], "¿Qué son las 5S?")[0] is None
+
+
+_CINCO_S = ("Las 5S son una metodología para organizar, limpiar y mantener el lugar de trabajo. Su nombre viene de "
+            "cinco palabras japonesas: Seiri (clasificar), Seiton (ordenar), Seiso (limpiar), Seiketsu "
+            "(estandarizar) y Shitsuke (disciplina).")
+
+
+def test_lista_que_queda_a_medias_de_lo_que_se_pide_se_descarta():
+    """"¿Cuáles son las 5S?": el control quitó elementos mal copiados y quedaban solo Seiso y Seiketsu, que se
+    leía como una respuesta completa (08/11/2026, PC de Alfredo)."""
+    respuesta = ("1. Seiri - Clasificar lo necesario\n2. Seiton - Ordenar\n3. Seiso - Limpiar\n"
+                 "4. Seiketsu - Estandarizar\n5. Kaizen - Disciplina")
+    texto, motivo = revisar(respuesta, [_CINCO_S], "¿Cuáles son las 5S?")
+    assert texto is None and "incompleta" in motivo
+
+
+def test_lista_con_guion_entre_nombre_y_explicacion_pasa():
+    respuesta = ("1. Seiri - clasificar\n2. Seiton - ordenar\n3. Seiso - limpiar\n4. Seiketsu - estandarizar\n"
+                 "5. Shitsuke - disciplina")
+    texto, _ = revisar(respuesta, [_CINCO_S], "¿Cuáles son las 5S?")
+    assert texto is not None and texto.splitlines()[0] == "1. Seiri - clasificar" and len(texto.splitlines()) == 5
+
+
+def test_lista_numerada_en_una_linea_con_guiones_no_parte_los_elementos():
+    from app.rag.respaldo import items
+    assert len(items("1. Seiri - clasificar 2. Seiton - ordenar 3. Seiso - limpiar")) == 3
+
+
+def test_cantidad_pedida():
+    from app.rag.respaldo import cantidad_pedida
+    assert cantidad_pedida("¿Cuáles son las 5S?") == 5
+    assert cantidad_pedida("¿Cuáles son los ocho desperdicios?") == 8
+    assert cantidad_pedida("¿Cuáles son los principios del PMBOK 8.ª edición?") is None
+    assert cantidad_pedida("¿Qué es el OEE?") is None

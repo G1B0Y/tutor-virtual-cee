@@ -15,7 +15,7 @@ import sys
 import psycopg
 
 from app.config import obtener_configuracion
-from app.consulta import seleccionar, texto_para_buscar
+from app.consulta import _con_continuacion, seleccionar, texto_para_buscar
 from app.rag.busqueda import buscar_fragmentos, indice_lexico, terminos
 from app.rag.embeddings import crear_embeddings
 from app.rag.llm import ErrorLLM, LLMOllama
@@ -54,9 +54,13 @@ def main(argumentos: list[str] | None = None) -> int:
             print(f"  puntaje={f.puntaje:.3f}  d={f.distancia:.4f}  {_lugar(f)}{fuera}")
         elegidos = seleccionar(encontrados[:config.fragmentos_por_consulta], config.umbral_distancia,
                                config.margen_puntaje)
+        # Igual que el chat: si el mejor termina en el tema o en ":", se le pega el fragmento siguiente.
+        antes = elegidos[0].texto if elegidos else ""
+        elegidos = _con_continuacion(conexion, vector, args.pregunta, elegidos)
         print("\nVan al modelo:" if elegidos else "\nNinguno pasa el umbral: el tutor se abstiene.")
-        for f in elegidos:
-            print(f"  {_lugar(f)}")
+        for n, f in enumerate(elegidos):
+            unido = "  (con el fragmento siguiente pegado)" if n == 0 and f.texto != antes else ""
+            print(f"  {_lugar(f)}{unido}")
         if args.sin_llm or not elegidos:
             return 0
 

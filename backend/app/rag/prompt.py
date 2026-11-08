@@ -21,7 +21,8 @@ Reglas obligatorias:
 9. Si viene <pregunta_anterior>, úsala solo para entender a qué se refiere la pregunta actual (por ejemplo, "ese curso" o "el tema uno"); responde la pregunta actual.
 10. Si piden un resumen o una explicación y los documentos solo enumeran los temas, enumera esos temas tal como están y sugiere revisar la separata del tema o consultar al docente; no los expliques con conocimiento propio.
 11. Si un documento describe varios conceptos seguidos, usa solo lo que dice del concepto que preguntaron; no le agregues lo que dice del concepto anterior o del siguiente.
-12. Copia los nombres, términos y fórmulas tal como están escritos en los documentos (por ejemplo, los nombres japoneses de las 5S), sin traducirlos ni cambiarlos."""
+12. Copia los nombres, términos y fórmulas tal como están escritos en los documentos (por ejemplo, los nombres japoneses de las 5S), sin traducirlos ni cambiarlos.
+13. Si la pregunta nombra una edición, versión o año (por ejemplo, "la octava edición"), responde solo con lo que los documentos dicen de esa edición, no de otra."""
 
 
 def armar_mensajes(pregunta: str, fragmentos: list[FragmentoEncontrado],

@@ -108,5 +108,9 @@ def test_si_el_mejor_fragmento_termina_en_el_tema_va_tambien_el_siguiente(db):
     termina_en_octava = next(f for f in buscar_fragmentos(db, vector, 50, titulo, pregunta, 2.0)
                              if f.texto.rstrip().endswith("Octava edición (noviembre de 2025):"))
     juntos = _con_continuacion(db, vector, pregunta, [termina_en_octava])
-    assert len(juntos) == 2 and "Adoptar una visión holística" in juntos[1].texto
-    assert juntos[1].orden == termina_en_octava.orden + 1
+    # Un solo texto: la lista de la octava edición queda justo después de "Octava edición (noviembre de 2025):".
+    assert len(juntos) == 1 and juntos[0].pagina == termina_en_octava.pagina
+    texto = juntos[0].texto
+    assert texto.startswith(termina_en_octava.texto)
+    assert "Adoptar una visión holística" in texto
+    assert texto.count("Octava edición (noviembre de 2025):") == 1  # sin la oración repetida del solape

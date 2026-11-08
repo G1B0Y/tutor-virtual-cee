@@ -36,6 +36,22 @@ _VACIAS = set("""
     """.split())
 
 _ITEM = re.compile(r"(?:^|\s)(\d{1,2}[.)]|[-•*])\s+")
+# Si la lista está numerada, el guion no marca ítems: "1. Seiri - Clasificar… 2. Seiton - Ordenar…" (08/11/2026).
+_ITEM_NUMERADO = re.compile(r"(?:^|\s)(\d{1,2}[.)])\s+")
+_NUMEROS_EN_PALABRAS = {"dos": 2, "tres": 3, "cuatro": 4, "cinco": 5, "seis": 6, "siete": 7, "ocho": 8, "nueve": 9,
+                        "diez": 10, "once": 11, "doce": 12}
+_CANTIDAD_PEDIDA = re.compile(r"\b(?:los|las|sus|cu[aá]les son)\s+(\d{1,2}|" + "|".join(_NUMEROS_EN_PALABRAS) +
+                              r")\s*[a-zñ]", re.IGNORECASE)
+
+
+def cantidad_pedida(pregunta: str) -> int | None:
+    """Cuántos elementos pide la pregunta: "las 5S" → 5, "los ocho desperdicios" → 8; "PMBOK 8.ª edición" → None."""
+    hallados = _CANTIDAD_PEDIDA.findall(pregunta)
+    if not hallados:
+        return None
+    valor = hallados[-1].lower()
+    n = int(valor) if valor.isdigit() else _NUMEROS_EN_PALABRAS[valor]
+    return n if 2 <= n <= 20 else None
 _ORACION = re.compile(r"(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÑ¿¡])")
 
 
@@ -105,7 +121,9 @@ def _partir(respuesta: str) -> tuple[str, list[tuple[str, str]], str]:
         antes = " ".join(l.strip() for l in lineas[:marcadas[0]])
         despues = " ".join(l.strip() for l in lineas[marcadas[-1] + 1:])
         return antes, lista, despues
-    partes = _ITEM.split(respuesta)
+    partes = _ITEM_NUMERADO.split(respuesta)
+    if len(partes) <= 6:
+        partes = _ITEM.split(respuesta)
     if len(partes) <= 6:  # menos de 3 ítems
         return respuesta, [], ""
     return partes[0], list(zip(partes[1::2], partes[2::2])), ""
@@ -184,7 +202,8 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
                 item, resto = trozos[0], (trozos[1] if len(trozos) > 1 else "")
                 resto = f"{resto} {despues}".strip()
             # "Nombre: explicación" o "Nombre = fórmula" ("Disponibilidad = tiempo de operación / …").
-            cabeza, separador, explicacion = (re.split(r"(:| = )", item, maxsplit=1) + ["", ""])[:3]
+            # También "Nombre - explicación" ("Seiri - Clasificar…").
+            cabeza, separador, explicacion = (re.split(r"(:| = | [-–] )", item, maxsplit=1) + ["", ""])[:3]
             nombre = cabeza
             if len(cabeza.split()) > 6:
                 cabeza = nombre = item
@@ -212,6 +231,10 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
                 agregar_oraciones(resto, cuenta=False)
         if malos * 3 > len(lista):
             return None, f"lista con {malos} de {len(lista)} elementos que no están en los documentos"
+        pedida = cantidad_pedida(pregunta)
+        if malos and pedida and len(lista) - malos < pedida:
+            # "¿Cuáles son las 5S?" y quedaban solo Seiso y Seiketsu: una lista a medias se lee como si fuera completa.
+            return None, f"lista incompleta: quedan {len(lista) - malos} de los {pedida} elementos que se piden"
 
     if not salida or (es_lista and total and quitadas / total > 2 / 3):
         return None, f"{quitadas} de {total} palabras con contenido no están en los documentos"
