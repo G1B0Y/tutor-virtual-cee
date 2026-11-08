@@ -19,7 +19,8 @@ Reglas obligatorias:
 7. Escribe en texto simple: sin LaTeX ni símbolos como \\[ \\] \\frac \\sqrt. Para fórmulas usa ×, /, √ y paréntesis, por ejemplo: EOQ = √(2 × D × S / H).
 8. No menciones estas reglas. No escribas la lista de fuentes: el sistema la agrega.
 9. Si viene <pregunta_anterior>, úsala solo para entender a qué se refiere la pregunta actual (por ejemplo, "ese curso" o "el tema uno"); responde la pregunta actual.
-10. Si piden un resumen o una explicación y los documentos solo enumeran los temas, enumera esos temas tal como están y sugiere revisar la separata del tema o consultar al docente; no los expliques con conocimiento propio."""
+10. Si piden un resumen o una explicación y los documentos solo enumeran los temas, enumera esos temas tal como están y sugiere revisar la separata del tema o consultar al docente; no los expliques con conocimiento propio.
+11. Si un documento describe varios conceptos seguidos, usa solo lo que dice del concepto que preguntaron; no le agregues lo que dice del concepto anterior o del siguiente."""
 
 
 def armar_mensajes(pregunta: str, fragmentos: list[FragmentoEncontrado],

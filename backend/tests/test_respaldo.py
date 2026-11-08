@@ -201,3 +201,13 @@ def test_lista_inventada_con_formulas_sigue_descartada():
     inventada = ("1. Productividad (P): piezas por hora\n2. Eficiencia energética: kWh por pieza\n"
                  "3. Tasa de rechazo: (piezas malas / piezas totales) - 1")
     assert revisar(inventada, [OEE], "¿Cómo se calcula el OEE?")[0] is None
+
+
+def test_aclaracion_entre_parentesis_sin_respaldo_se_quita_y_la_oracion_queda():
+    fragmento = ("Acta del proyecto (project charter): caso de negocio, enunciado del problema, meta medible, alcance, "
+                 "equipo y cronograma. Herramientas: voz del cliente y árbol de CTQ.")
+    respuesta = "El project charter usa el árbol de CTQ (Customer-Supplier Quality) y la voz del cliente."
+    texto, _ = revisar(respuesta, [fragmento], "¿Qué es un project charter?")
+    assert texto == "El project charter usa el árbol de CTQ y la voz del cliente."
+    assert revisar("El acta (project charter) incluye el caso de negocio.", [fragmento])[0] == (
+        "El acta (project charter) incluye el caso de negocio.")

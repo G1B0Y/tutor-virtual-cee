@@ -57,10 +57,11 @@ def _sin_tildes(texto: str) -> str:
 
 def terminos(texto: str) -> list[str]:
     """Raíces (6 letras) de las palabras que sirven para buscar, sin tildes ni repetidas. Se quedan las siglas de 3
-    letras o más ("cpi", "oee", "eoq"); "cp" no, así "CPI" no se confunde con "Cp"."""
+    letras o más ("cpi", "oee", "eoq") y las de 2 con un número ("5s"); "cp" no, así "CPI" no se confunde con "Cp"."""
     vistos: list[str] = []
     for palabra in re.findall(r"[a-zñ0-9]+", _sin_tildes(texto)):
-        if len(palabra) < 3 or palabra.isdigit() or palabra in _VACIAS_SIN_TILDES:
+        corta_con_numero = len(palabra) == 2 and re.fullmatch(r"\d[a-zñ]|[a-zñ]\d", palabra)  # "5s", "6m"
+        if (len(palabra) < 3 and not corta_con_numero) or palabra.isdigit() or palabra in _VACIAS_SIN_TILDES:
             continue
         raiz = palabra[:6]
         if raiz not in vistos:
@@ -71,16 +72,29 @@ def terminos(texto: str) -> list[str]:
 _VACIAS_SIN_TILDES = {_sin_tildes(p) for p in _VACIAS}
 
 
+_EN_MAYUSCULAS = re.compile(r"\b(?=[A-ZÑ0-9]*[A-ZÑ])[A-ZÑ0-9]{2,6}\b")
+
+
 class IndiceLexico:
-    """Raíces de cada fragmento vigente y en cuántos fragmentos aparece cada raíz (para el IDF)."""
+    """Raíces de cada fragmento vigente (con las del título de su documento: "los principios del PMBOK" también
+    está en el fragmento que sigue y ya no dice "PMBOK") y en cuántos fragmentos aparece cada raíz (para el IDF).
+
+    `siglas`: palabras que el material escribe en MAYÚSCULAS (CPI, OEE, 5S, DMAIC) y que no están en casi todos
+    los fragmentos (como "CEE" o "PRUEBA" del aviso de cada página)."""
 
     def __init__(self, filas: list[tuple[int, str, str]]):
         self.titulos = {i: titulo for i, titulo, _ in filas}
-        self.raices = {i: set(terminos(texto)) for i, _, texto in filas}
+        self.raices = {i: set(terminos(texto)) | set(terminos(titulo)) for i, titulo, texto in filas}
         self.frecuencia: dict[str, int] = {}
         for raices in self.raices.values():
             for r in raices:
                 self.frecuencia[r] = self.frecuencia.get(r, 0) + 1
+        mayusculas = {r for _, titulo, texto in filas for m in _EN_MAYUSCULAS.findall(f"{titulo} {texto}")
+                      for r in terminos(m)}
+        self.siglas = {r for r in mayusculas if self.frecuencia.get(r, 0) <= max(1, 0.3 * len(filas))}
+
+    def siglas_de(self, consulta: list[str]) -> set[str]:
+        return {r for r in consulta if r in self.siglas}
 
     def idf(self, raiz: str) -> float:
         n = len(self.raices)
@@ -101,6 +115,10 @@ class IndiceLexico:
                 resultado[i] = suma / total
         return resultado
 
+
+# Lo que baja el puntaje de un fragmento que no tiene la sigla que nombra la pregunta (el puntaje va de 0 a 2):
+# con MARGEN_PUNTAJE 0.4 queda fuera de las fuentes si otro fragmento sí la tiene.
+PENALIZACION_SIN_SIGLA = 1.0
 
 _indice: tuple[tuple, IndiceLexico] | None = None
 _candado_indice = threading.Lock()
@@ -135,7 +153,10 @@ def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite:
             LIMIT %s""",
         (como_vector(vector), titulo, titulo, candidatos),
     ).fetchall()
-    lexicos = indice_lexico(conexion).puntajes(terminos(texto), titulo)
+    indice = indice_lexico(conexion)
+    consulta = terminos(texto)
+    lexicos = indice.puntajes(consulta, titulo)
+    siglas = indice.siglas_de(consulta)
     mejores = sorted(lexicos, key=lexicos.get, reverse=True)[:candidatos]
     faltan = [i for i in mejores if i not in {f[0] for f in cercanos}]
     if faltan:
@@ -153,6 +174,13 @@ def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite:
         return v + peso_lexico * lexicos.get(i, 0.0)
 
     encontrados = [FragmentoEncontrado(t, ti, p, float(d), puntaje(float(d), i)) for i, t, ti, p, d in cercanos]
+    # Si la pregunta nombra una sigla del material (CPI, OEE, 5S) y hay fragmentos que la tienen, los que no la
+    # tienen bajan: con "¿Qué indica un CPI menor que 1?" el Cp de Lean quedaba primero por "indica" y "menor".
+    con_sigla = {i for i, *_ in cercanos if siglas & indice.raices.get(i, set())}
+    if con_sigla and any(float(d) <= umbral for i, *_, d in cercanos if i in con_sigla):
+        encontrados = [f if i in con_sigla else FragmentoEncontrado(f.texto, f.titulo, f.pagina, f.distancia,
+                                                                    f.puntaje - PENALIZACION_SIN_SIGLA)
+                       for f, (i, *_) in zip(encontrados, cercanos)]
     # Primero los que pasan el umbral; entre ellos, por puntaje.
     encontrados.sort(key=lambda f: (f.distancia <= umbral, f.puntaje), reverse=True)
     return encontrados[:limite]

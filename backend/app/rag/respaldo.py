@@ -19,6 +19,7 @@ Por eso la respuesta se revisa por partes, sin depender del modelo:
 - Toda cifra (porcentaje, horas, nota, fecha) tiene que estar en los documentos o en la pregunta: si no, se quita
   la oración o el elemento. Granite cambió los porcentajes de la clasificación ABC ("el 10 % de los ítems").
 - Los títulos de los documentos cuentan como parte de ellos ("Lean Six Sigma Green Belt").
+- Una aclaración entre paréntesis sin respaldo se quita sola ("CTQ (Customer-Supplier Quality)").
 """
 
 import re
@@ -122,6 +123,17 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
     fuentes = [_palabras(f) for f in fragmentos] + [_palabras(pregunta)]
     conocidas = set().union(*fuentes)
     cifras = _numeros(" ".join(fragmentos) + " " + pregunta)
+
+    def aclaracion_ok(m: re.Match) -> str:
+        # Una aclaración entre paréntesis sin respaldo se quita sola, sin tocar la oración: granite escribió
+        # "el árbol de CTQ (Customer-Supplier Quality)" y CTQ es Critical to Quality (08/11/2026).
+        dentro = m.group(1)
+        propias = _raices(dentro)
+        if not _numeros(dentro) <= cifras or (propias and len(propias & conocidas) / len(propias) < minimo):
+            return ""
+        return m.group(0)
+
+    respuesta = re.sub(r"[ \t]*\(([^()]*)\)", aclaracion_ok, respuesta)
 
     def cifras_ok(texto: str) -> bool:
         # Una cifra que no está en los documentos es el error más grave para un alumno (porcentajes, horas, notas).

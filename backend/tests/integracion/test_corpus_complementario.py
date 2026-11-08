@@ -44,6 +44,9 @@ def test_la_busqueda_hibrida_distingue_cpi_de_cp_y_se_actualiza_al_retirar(db):
     assert "PMBOK" in top[0].titulo and "CPI" in top[0].texto
     assert any(f.titulo.startswith("Gestión de Proyectos con el PMBOK – Unidad 3") for f in top)
     assert [f.puntaje for f in top] == sorted((f.puntaje for f in top), reverse=True)
+    # Los que no tienen la sigla quedan después de los que sí (el Cp de Lean ya no sale primero).
+    con_cpi = ["CPI" in f.texto for f in top]
+    assert con_cpi == sorted(con_cpi, reverse=True)
 
     retirar_corpus(db, complementario)  # el índice de palabras se rehace solo
     assert all("(material complementario)" not in f.titulo

@@ -130,6 +130,20 @@ def test_terminos_conservan_las_siglas_y_quitan_las_palabras_de_pregunta():
     assert terminos("¿Cómo se calcula el OEE?") == ["oee"]
     assert terminos("matriz de poder e INTERÉS") == ["matriz", "poder", "intere"]
     assert "cp" not in terminos("El Cp de un proceso")  # así CPI no se confunde con Cp
+    assert terminos("¿Qué son las 5S?") == ["5s"]  # antes quedaba vacío y la búsqueda por palabras no ayudaba
+
+
+def test_siglas_del_material_y_titulo_en_cada_fragmento():
+    from app.rag.busqueda import IndiceLexico, terminos
+
+    filas = [(1, "Gestión de Proyectos con el PMBOK – Unidad 1", "La octava edición tiene 6 principios."),
+             (2, "Lean Six Sigma – Unidad 3", "Si el Cp es menor que 1, el proceso no es capaz. Validado por el CEE."),
+             (3, "Gestión de Proyectos con el PMBOK – Unidad 3", "CPI = EV / AC. Validado por el CEE."),
+             (4, "Cadena de Suministro – Módulo 4", "Validado por el CEE.")]
+    indice = IndiceLexico(filas)
+    assert indice.puntajes(terminos("principios del PMBOK"))[1] == 1.0  # "PMBOK" está en el título
+    assert indice.siglas_de(terminos("¿Qué indica un CPI?")) == {"cpi"}
+    assert "cee" not in indice.siglas  # está en casi todos: no sirve para distinguir
 
 
 def test_indice_lexico_pesa_mas_las_palabras_raras():
