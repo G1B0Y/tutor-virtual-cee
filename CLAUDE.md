@@ -56,6 +56,7 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 - [ ] Que Alfredo pruebe en su PC la primera respuesta (README, pasos 3 a 6: `ollama pull qwen2.5:1.5b`, `python -m app.ingesta corpus /corpus/prueba`, preguntar en el chat) y una PR #1 → #2 → #3.
 - [ ] Alfredo: `git pull` en `claude/primera-respuesta`, `docker compose up -d --build` y volver a probar las preguntas (sobre todo Lean Six Sigma unidad 3, horas del programa y EOQ).
 - [ ] Verificar en la ficha oficial las licencias de e5-small (MIT) y granite3.3:2b (Apache 2.0). Calibrar `margen_fuentes` (hoy 0.03, provisional) con la escala de e5: que el benchmark mida cuántas fuentes cita y si incluye la correcta.
+- [ ] granite3.3:2b todavía agrega 1–2 frases propias en los resúmenes ("es fundamental para el éxito del proyecto") aunque la regla 10 lo prohíbe, y al listar el temario de PMBOK omitió la Unidad 4 (el fragmento no llegó al modelo). Revisar con el corpus real; probar un ejemplo en el prompt si sigue.
 - [ ] Cuando llegue el corpus real del CEE: rehacer `benchmark/preguntas.json` con sus documentos y volver a correr el benchmark.
 - [ ] Confirmar con el equipo si hay resultados del benchmark o preguntas del CEE ya escritas.
 - [ ] Pedir al CEE el corpus inicial (temarios, separatas, FAQs) y quién es el responsable de la base de conocimiento.
