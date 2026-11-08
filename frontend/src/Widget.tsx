@@ -7,6 +7,7 @@ import {
   type EstadoRespuesta,
   type Fuente,
 } from "./api";
+import simbolo from "./marca/cee-simbolo.png";
 
 type Conexion = "revisando" | "disponible" | "degradado" | "sin-conexion";
 
@@ -95,7 +96,7 @@ export function Widget() {
       {abierto && (
         <section className="tutor-panel" role="dialog" aria-label="Tutor Virtual del CEE">
           <header className="tutor-cabecera">
-            <img className="tutor-avatar" src="/marca/cee-simbolo.png" alt="" />
+            <img className="tutor-avatar" src={simbolo} alt="" />
             <div className="tutor-titulo">
               <strong>Tutor Virtual CEE</strong>
               <span className={`tutor-estado tutor-estado--${conexion}`}>{TEXTO_CONEXION[conexion]}</span>
@@ -150,7 +151,7 @@ export function Widget() {
         aria-expanded={abierto}
         aria-label={abierto ? "Cerrar el tutor virtual" : "Abrir el tutor virtual"}
       >
-        {abierto ? "×" : <img src="/marca/cee-simbolo.png" alt="" />}
+        {abierto ? "×" : <img src={simbolo} alt="" />}
       </button>
     </div>
   );

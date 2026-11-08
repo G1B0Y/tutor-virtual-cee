@@ -4,6 +4,7 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 
 ## 08/11/2026
 
+- Chat empaquetado como `tutor-cee.js` (un solo archivo con estilos y logo, Shadow DOM, `data-api`), listo para "HTML adicional" de Moodle. Probado con una página de estilos agresivos en 360 px y en PC. Falta probarlo en el Moodle del Grupo 3 y en un celular real.
 - Alfredo preguntó si ya está para PC3: lo central cumple la meta (19/20 y 10/10), faltan los pendientes de la Fase 3, el widget empaquetado y las pruebas de la Fase 5. Hechos hoy: límite de preguntas por minuto (HTTP 429, el chat pide esperar) y listado de consultas pendientes para el CEE protegido con clave (`CLAVE_CEE`). 156 pruebas. Siguiente: empaquetar `tutor-cee.js` y revisar el chat en 360 px.
 - Benchmark de a06d986 en la PC de Alfredo (e5 + granite): 19/20 y 10/10, 4,6 s promedio / 12,2 s p95, sin respuestas descartadas. Única falla D14 ("variación especial" en vez de "causa especial"); la clave no se afloja. ABC: con el fragmento correcto, la lista y la oración correctas pasan, y la versión con cifras inventadas queda solo con la primera oración.
 - Prueba de 45f30d5 en la PC: VSM ya responde recortada; los 8 desperdicios siguen abstenidos. En D05 (ABC) el fragmento llegaba entero, pero granite inventó porcentajes ("el 10 % de los ítems" para los B) y pasaban porque el control no miraba cifras. Ahora toda cifra tiene que estar en los documentos o en la pregunta. 147 pruebas.

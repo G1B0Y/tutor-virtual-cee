@@ -1,4 +1,9 @@
-export const API_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+let apiUrl: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+/** Dirección de la API. En `tutor-cee.js` sale del atributo `data-api` del <script> que lo carga. */
+export function usarApi(url: string): void {
+  apiUrl = url.replace(/\/+$/, "");
+}
 
 export type EstadoServicio = { estado: "ok" | "error"; detalle?: string };
 
@@ -8,7 +13,7 @@ export type RespuestaSalud = {
 };
 
 export async function consultarSalud(senal?: AbortSignal): Promise<RespuestaSalud> {
-  const respuesta = await fetch(`${API_URL}/salud`, { signal: senal });
+  const respuesta = await fetch(`${apiUrl}/salud`, { signal: senal });
   if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
   return respuesta.json() as Promise<RespuestaSalud>;
 }
@@ -37,7 +42,7 @@ export async function consultar(
   documento?: string,
   senal?: AbortSignal,
 ): Promise<RespuestaConsulta> {
-  const respuesta = await fetch(`${API_URL}/consulta`, {
+  const respuesta = await fetch(`${apiUrl}/consulta`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pregunta, ...(anterior ? { anterior } : {}), ...(documento ? { documento } : {}) }),

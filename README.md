@@ -143,6 +143,16 @@ Invoke-RestMethod http://localhost:8000/consultas-pendientes -Headers @{ "X-Clav
 
 Cada alumno puede hacer `LIMITE_POR_MINUTO` preguntas por minuto (8 por defecto; 0 = sin límite). Si se pasa, el chat le pide esperar unos segundos. Detrás de Nginx, en el servidor, se pone `CONFIAR_EN_PROXY=true`, para que cuente la IP de cada alumno y no la del proxy.
 
+### 10. El chat como un solo archivo para el Campus (`tutor-cee.js`)
+
+`npm run build` (en `frontend`) también genera `frontend/dist-embebido/tutor-cee.js`: el chat completo (estilos y logo incluidos) en un solo archivo. Se pega en Moodle (Administración del sitio → Apariencia → HTML adicional → "Antes de cerrar BODY"):
+
+```html
+<script src="https://<servidor-del-tutor>/widget/tutor-cee.js" data-api="https://<servidor-del-tutor>/api" defer></script>
+```
+
+`data-api` es la dirección de la API y la del Campus tiene que estar en `ORIGENES_PERMITIDOS` del `.env`. Para probarlo sin Moodle: `npm run build`, luego `npx vite preview --outDir . --port 4173` y abre http://127.0.0.1:4173/ejemplo-moodle.html (una página con estilos agresivos, como los de un tema de Moodle, que no deben cambiar el chat).
+
 ### Comandos
 
 | Qué | Comando |

@@ -82,10 +82,10 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 4 – Chat (08–12/11) · RF-M01, RNF-13, RNF-24 a 26
 
-- [x] Widget de chat en React + TypeScript + Vite (botón flotante que abre el panel). Falta empaquetarlo para embeberlo en otra página.
+- [x] Widget de chat en React + TypeScript + Vite (botón flotante que abre el panel). Empaquetado como `tutor-cee.js` con Shadow DOM (08/11).
 - [x] Mensajes con fuentes, estado "no encontré información" con el canal humano, "sistema ocupado" y error claro si el bot no responde.
 - [x] Aviso visible: "asistente automatizado, puede equivocarse".
-- [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible.
+- [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible. 08/11: 360 px sin desborde y con `100dvh` (Playwright); falta un celular real y revisar teclado/contraste.
 - [ ] **Campus simulado:** página HTML que embebe el widget y le pasa un token de sesión de prueba, hasta que el Grupo 3 defina la integración real.
 - [x] Si la API cae, el campus simulado sigue funcionando (RNF-03).
 
