@@ -243,3 +243,11 @@ def test_respuesta_inventada_se_descarta_aunque_el_modelo_no_se_abstenga(con_cor
     assert con_corpus.execute(
         "SELECT count(*) FROM consultas_pendientes WHERE pregunta = '¿Cuáles son los 8 desperdicios de Lean?'"
     ).fetchone()[0] == 1
+
+
+def test_lista_inventada_con_palabras_del_tema_tambien_se_descarta(con_corpus):
+    from tests.test_respaldo import INVENTADA_2
+
+    r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA_2),
+                  Turno(3), CONFIG)
+    assert r.estado == SIN_EVIDENCIA
