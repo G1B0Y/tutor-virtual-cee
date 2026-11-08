@@ -74,7 +74,7 @@ def _con_los_dos_corpus(db):
     return emb
 
 
-def test_con_evidencia_fuerte_se_pide_una_segunda_vez(db):
+def test_con_evidencia_fuerte_se_pide_una_segunda_vez(db, caplog):
     from app.config import Configuracion
     from app.consulta import RESPONDIDA, SIN_EVIDENCIA, Turno, responder
     from app.rag.prompt import REINTENTO
@@ -89,9 +89,12 @@ def test_con_evidencia_fuerte_se_pide_una_segunda_vez(db):
 
     # Sin evidencia fuerte no se insiste: la abstención queda.
     llm = LLMQueDudaUnaVez()
+    caplog.set_level("INFO", logger="tutor")
     r = responder("¿Cómo se calcula el OEE?", db, emb, llm, Turno(3),
                   config.model_copy(update={"puntaje_reintento": 2.5}))
     assert r.estado == SIN_EVIDENCIA and len(llm.llamadas) == 1
+    # Queda en el log por qué no se insistió, para calibrar PUNTAJE_REINTENTO con el material real.
+    assert any("Sin segundo intento" in m and "< 2.50" in m for m in caplog.messages)
 
 
 def test_si_el_mejor_fragmento_termina_en_el_tema_va_tambien_el_siguiente(db):

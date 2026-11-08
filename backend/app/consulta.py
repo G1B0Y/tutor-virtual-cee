@@ -274,6 +274,10 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
             # (el fragmento tiene casi todas las palabras de la pregunta) se le pide una vez más.
             registro.info("Segundo intento: había evidencia fuerte (puntaje %.2f)", utiles[0].puntaje)
             texto = revisado(llm.generar(mensajes_de_reintento(mensajes)))
+        elif es_sin_evidencia(texto):
+            # Para calibrar PUNTAJE_REINTENTO: en la PC de Alfredo, OEE y 5S se descartaron sin reintento en una
+            # ronda y con reintento en otra, según cómo estaba escrita la pregunta (08/11/2026).
+            registro.info("Sin segundo intento: puntaje %.2f < %.2f", utiles[0].puntaje, config.puntaje_reintento)
     except ErrorLLM:
         mejor = utiles[0]
         return terminar(Respuesta(
