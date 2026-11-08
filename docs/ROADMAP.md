@@ -62,7 +62,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Correr el benchmark completo en la PC de Alfredo (07/11: informe `2026-11-07_1822`). Informe en `benchmark/resultados/`.
 - [x] Elegir modelos (07/11, decisión de Alfredo): **e5-small + granite3.3:2b** (19/20 aciertos con fuente, 10/10 rechazos, 10,6 s promedio). Umbrales 0.18 / 0.10 en `.env.example` y por defecto; comando `python -m app.ingesta reindexar` para recalcular los vectores al cambiar de embeddings.
 - [x] Control de respaldo sin el modelo (08/11): se quitan las frases y los elementos de lista que no están en los documentos; si la lista es inventada o queda poco, se abstiene (`app/rag/respaldo.py`).
-- [ ] Probar el control de respaldo en la PC de Alfredo y repetir el benchmark del par elegido.
+- [x] Probar el control de respaldo en la PC de Alfredo y repetir el benchmark del par elegido (08/11: 19/20, 10/10, 4,6 s).
 - [ ] Verificar las licencias en la ficha oficial (RNF-23): e5-small (MIT) y granite3.3:2b (Apache 2.0).
 
 **Listo cuando:** recall@5 ≥ 80 % y hay un informe con los modelos elegidos y por qué.
