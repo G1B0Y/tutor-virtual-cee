@@ -37,17 +37,19 @@ def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite:
     return [FragmentoEncontrado(t, ti, p, float(d)) for t, ti, p, d in filas]
 
 
-def fragmentos_que_dicen(conexion: psycopg.Connection, vector: list[float], titulo: str, patron: str,
-                         limite: int = 2) -> list[FragmentoEncontrado]:
-    """Fragmentos de un documento cuyo texto calza con `patron` (regex de PostgreSQL, sin distinguir mayúsculas).
-    Para "unidad 1": el fragmento que dice "Unidad 1" no siempre es el más cercano por significado."""
+def fragmentos_que_dicen(conexion: psycopg.Connection, vector: list[float], titulo: str | None, patron: str,
+                         limite: int = 2, mayusculas: bool = False) -> list[FragmentoEncontrado]:
+    """Fragmentos (de un documento, o de todos si `titulo` es None) cuyo texto calza con `patron` (regex de
+    PostgreSQL; sin distinguir mayúsculas salvo `mayusculas=True`, para siglas). Para "unidad 1": el fragmento que
+    dice "Unidad 1" no siempre es el más cercano por significado."""
+    operador = "~" if mayusculas else "~*"
     filas = conexion.execute(
-        """SELECT texto, titulo, pagina, embedding <=> %s::vector AS distancia
+        f"""SELECT texto, titulo, pagina, embedding <=> %s::vector AS distancia
              FROM fragmentos_vigentes
-            WHERE titulo = %s AND texto ~* %s
+            WHERE (%s::text IS NULL OR titulo = %s) AND texto {operador} %s
             ORDER BY distancia
             LIMIT %s""",
-        (como_vector(vector), titulo, patron, limite),
+        (como_vector(vector), titulo, titulo, patron, limite),
     ).fetchall()
     return [FragmentoEncontrado(t, ti, p, float(d)) for t, ti, p, d in filas]
 

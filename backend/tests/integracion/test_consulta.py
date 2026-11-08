@@ -201,3 +201,28 @@ def test_documento_anterior_que_no_existe_no_rompe_la_busqueda(con_corpus):
     r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3),
                   CONFIG, documento_anterior="Reglamento Académico (FAQ)")
     assert r.estado == RESPONDIDA
+
+
+def test_pregunta_de_una_sigla_encuentra_el_documento_que_la_define(con_corpus):
+    """"que es un VSM?" no llegaba al temario de Lean, que dice "mapa de flujo de valor (VSM)" (08/11/2026)."""
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    llm = LLMFalso()
+    r = responder("que es un vsm?", con_corpus, EmbeddingsHash(), llm, Turno(3), estricta)
+    assert r.estado == RESPONDIDA
+    assert [f.titulo for f in r.fuentes] == ["Temario – Lean Six Sigma Green Belt (PRUEBA)"]
+    assert "(VSM)" in llm.recibido[-1]["content"]
+
+
+def test_sin_sigla_ni_evidencia_se_sigue_absteniendo(con_corpus):
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    r = responder("¿Quién ganó el mundial?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), estricta)
+    assert r.estado == SIN_EVIDENCIA
+
+
+def test_si_el_modelo_se_abstiene_dice_que_material_reviso(con_corpus):
+    """"¿cuáles son los 8 desperdicios?": el temario los nombra pero no los lista. El alumno ve dónde se buscó."""
+    r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso("SIN_EVIDENCIA"),
+                  Turno(3), CONFIG)
+    assert r.estado == SIN_EVIDENCIA
+    assert r.respuesta.startswith("No encontré la respuesta en los materiales del CEE (lo más cercano que revisé: ")
+    assert r.fuentes == []

@@ -125,6 +125,21 @@ def _registrar(conexion: psycopg.Connection, r: Respuesta, pregunta: str, modelo
         )
 
 
+_SIGLA = re.compile(r"\b([A-Za-zÑñ]{3,5})\b")
+
+
+def _por_sigla(conexion: psycopg.Connection, vector: list[float], pregunta: str) -> list[FragmentoEncontrado]:
+    """"¿Qué es un VSM?" casi no tiene texto y la búsqueda por significado no llega al temario, que sí dice
+    "mapa de flujo de valor (VSM)" (08/11/2026). Si una palabra corta de la pregunta aparece EN MAYÚSCULAS en un
+    documento (una sigla), se toma el fragmento más cercano que la contiene."""
+    for palabra in _SIGLA.findall(pregunta):
+        sigla = palabra.upper()
+        encontrados = fragmentos_que_dicen(conexion, vector, None, rf"\m{sigla}\M", 1, mayusculas=True)
+        if encontrados:
+            return encontrados
+    return []
+
+
 def _con_unidad_pedida(conexion: psycopg.Connection, vector: list[float], pregunta: str,
                        utiles: list[FragmentoEncontrado]) -> list[FragmentoEncontrado]:
     """Si piden "unidad N", asegura que vaya al modelo el fragmento del documento que dice "Unidad N": en el temario
@@ -167,7 +182,8 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
     contexto = None
     hay_anterior = bool(anterior or documento_anterior) and not (anterior and respuesta_de_conversacion(anterior))
-    if hay_anterior and (not utiles or es_seguimiento(pregunta)):
+    corta = len(pregunta.split()) <= 3  # "¿y el VSM?", "que es eso": casi siempre siguen la conversación
+    if hay_anterior and (not utiles or es_seguimiento(pregunta) or (corta and documento_anterior)):
         # Seguimiento (08/11/2026): "estoy llevando ese curso, dame un resumen del tema uno" no dice qué curso.
         # "Ese curso" es el documento de la respuesta anterior (lo reenvía el chat) o, si no vino, el que encuentra
         # la pregunta anterior. Se busca solo en él para no mezclar cursos.
@@ -185,6 +201,8 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
             utiles = seleccionar(buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta),
                                  config.umbral_distancia, config.margen_fuentes)
             contexto = anterior if utiles else None
+    if not utiles:
+        utiles = _por_sigla(conexion, vector, pregunta)
     utiles = _con_unidad_pedida(conexion, vector, pregunta, utiles)
     if not utiles:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
@@ -206,6 +224,9 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         turno.liberar()
 
     if es_sin_evidencia(texto):
-        return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
-                                  + config.mensaje_derivacion), llm.nombre)
+        # Los documentos se encontraron pero no traen la respuesta (p. ej. el temario nombra "los 8 desperdicios"
+        # sin decir cuáles son): se dice qué se revisó, para que el alumno sepa dónde buscar (08/11/2026).
+        revisados = "; ".join(f"{f.titulo}" + (f", pág. {f.pagina}" if f.pagina else "") for f in _fuentes(utiles)[:2])
+        return terminar(Respuesta(SIN_EVIDENCIA, f"No encontré la respuesta en los materiales del CEE (lo más cercano "
+                                  f"que revisé: {revisados}). " + config.mensaje_derivacion), llm.nombre)
     return terminar(Respuesta(RESPONDIDA, limpiar_respuesta(texto), _fuentes(utiles)), llm.nombre)

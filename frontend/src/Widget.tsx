@@ -59,10 +59,9 @@ export function Widget() {
     const texto = pregunta.trim();
     if (texto.length < 2 || pensando) return;
     const anterior = [...mensajes].reverse().find((m) => m.de === "alumno")?.texto;
-    const ultimaDelBot = [...mensajes].reverse().find((m) => m.de === "bot" && m.id > 0);
-    const documento = ultimaDelBot && ultimaDelBot.de === "bot" && ultimaDelBot.estado === "respondida"
-      ? ultimaDelBot.fuentes?.[0]?.titulo
-      : undefined;
+    // El documento de la última respuesta con fuente (aunque después haya un "no encontré"): "ese curso".
+    const ultimaRespondida = [...mensajes].reverse().find((m) => m.de === "bot" && m.estado === "respondida");
+    const documento = ultimaRespondida?.de === "bot" ? ultimaRespondida.fuentes?.[0]?.titulo : undefined;
     agregar({ de: "alumno", texto });
     setPregunta("");
     setPensando(true);
