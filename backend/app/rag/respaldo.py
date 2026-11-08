@@ -12,7 +12,9 @@ Por eso la respuesta se revisa por partes, sin depender del modelo:
   es inventada y el tutor se abstiene. Los que no aparecen se quitan.
 - Cada oración, y la explicación de cada elemento, se queda solo si al menos el 60 % (`MINIMO_RESPALDO`) de sus
   palabras con contenido está en los documentos o en la pregunta; si no, se quita.
-- Si se quitó la mayor parte de la respuesta, el tutor se abstiene. En una lista respaldada, las explicaciones y el
+- En un texto corrido, si la primera oración (la respuesta directa) no está en los documentos, el tutor se abstiene;
+  si está, se queda con las oraciones respaldadas ("¿Qué es un VSM?" queda solo con la primera). En una lista, se
+  abstiene si se quitaron más de dos tercios. En una lista respaldada, las explicaciones y el
   comentario final que se quitan no cuentan para eso.
 - Los títulos de los documentos cuentan como parte de ellos ("Lean Six Sigma Green Belt").
 """
@@ -108,6 +110,10 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
                 quitadas += peso
 
     if not es_lista:
+        primera = next((o for o in _ORACION.split(respuesta.strip()) if o.strip()), "")
+        if not oracion_ok(primera):
+            # La primera oración suele ser la respuesta directa: si no está en los documentos, el resto es relleno.
+            return None, "la primera oración no está en los documentos"
         agregar_oraciones(respuesta)
     else:
         agregar_oraciones(partes[0])
@@ -141,7 +147,7 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
         if malos * 3 > len(lista):
             return None, f"lista con {malos} de {len(lista)} elementos que no están en los documentos"
 
-    if not salida or (total and quitadas / total > 0.5):
+    if not salida or (es_lista and total and quitadas / total > 2 / 3):
         return None, f"{quitadas} de {total} palabras con contenido no están en los documentos"
     texto = "\n".join(salida) if es_lista else " ".join(salida)
     return texto, (f"se quitaron {quitadas} de {total} palabras sin respaldo" if quitadas else "")

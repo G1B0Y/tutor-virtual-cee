@@ -102,3 +102,19 @@ def test_respuesta_sin_palabras_de_contenido_no_se_descarta():
 def test_items_en_una_sola_linea_y_texto_sin_lista():
     assert items("Son: 1. Uno 2. Dos 3. Tres") == ["Uno", "Dos", "Tres"]
     assert items("El EOQ = √(2 × D × S / H) - es la fórmula.") == []
+
+
+def test_vsm_queda_con_la_primera_oracion():
+    """Benchmark del 08/11/2026 en la PC de Alfredo: se descartaba entera (13 de 24 palabras propias)."""
+    vsm = ("El VSM se refiere a la herramienta de mapa de flujo de valor, que es parte del pensamiento lean. Este mapa "
+           "visualiza el proceso de producción, identificando los pasos necesarios para llevar un producto o servicio "
+           "desde su origen hasta su entrega al cliente, y destaca los desperdicios innecesarios.")
+    texto, motivo = revisar(vsm, [f"{TITULO_LEAN}. {TEMARIO_LEAN}"], "que es un VSM?", MINIMO)
+    assert texto == "El VSM se refiere a la herramienta de mapa de flujo de valor, que es parte del pensamiento lean."
+    assert motivo.startswith("se quitaron")
+
+
+def test_primera_oracion_sin_respaldo_se_abstiene():
+    relleno = ("El Kaizen es una filosofía japonesa de mejora continua creada por Masaaki Imai. Se relaciona con el "
+               "Pensamiento Lean, los 8 desperdicios y las 5S.")
+    assert revisar(relleno, [TEMARIO_LEAN], "que es kaizen", MINIMO)[0] is None
