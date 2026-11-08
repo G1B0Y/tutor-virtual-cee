@@ -80,9 +80,81 @@ def _normalizar(texto: str) -> str:
     return " ".join(re.sub(r"[^a-z0-9ñ]+", " ", sin_tildes).split())
 
 
+# --- Tolerancia a faltas de ortografía ("que curos llebo?", 08/11/2026) -----------------------------------
+# Cada palabra del alumno que no está en el vocabulario de las reglas se cambia por la palabra del vocabulario
+# que suena igual (b/v, s/c/z, ll/y, h muda, qu/k…) o que está a 1 letra (2 si es larga). Así las reglas siguen
+# escritas en buen español.
+
+_FONETICA = [
+    (r"h", ""), (r"v", "b"), (r"w", "u"), (r"ll", "y"), (r"qu", "k"), (r"c([ei])", r"s\1"), (r"z", "s"),
+    (r"c", "k"), (r"x", "ks"), (r"g([ei])", r"j\1"), (r"(.)\1", r"\1"),
+]
+
+
+def _sonido(palabra: str) -> str:
+    for patron, reemplazo in _FONETICA:
+        palabra = re.sub(patron, reemplazo, palabra)
+    return palabra
+
+
+def _distancia(a: str, b: str, tope: int) -> int:
+    """Levenshtein con corte: devuelve tope + 1 si se pasa."""
+    if abs(len(a) - len(b)) > tope:
+        return tope + 1
+    fila = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        anterior, fila[0] = fila[0], i
+        for j, cb in enumerate(b, 1):
+            anterior, fila[j] = fila[j], min(fila[j] + 1, fila[j - 1] + 1, anterior + (ca != cb))
+        if min(fila) > tope:
+            return tope + 1
+    return fila[-1]
+
+
+def _vocabulario(patrones: list[re.Pattern]) -> dict[str, str]:
+    """Palabras de las reglas (sonido → palabra). Las de 1–2 letras no se corrigen."""
+    palabras = set()
+    for patron in patrones:
+        palabras.update(re.findall(r"[a-zñ]{3,}", re.sub(r"\\[a-z]", " ", patron.pattern)))
+    return {_sonido(p): p for p in sorted(palabras)}
+
+
+# Abreviaturas de chat y palabras cortas que se escriben mal seguido.
+_ABREVIATURAS = {"q": "que", "k": "que", "ke": "que", "qe": "que", "xq": "porque", "pq": "porque", "x": "por",
+                 "ola": "hola", "tng": "tengo", "tb": "tambien", "pls": "por favor", "grax": "gracias", "thx": "gracias"}
+# Palabras correctas comunes que quedan a 1 letra de una del vocabulario y no se deben "corregir"
+# ("esta" no es "hasta", "cuesta" no es "cuenta").
+_NO_CORREGIR = {"esta", "estas", "este", "esto", "estan", "cuesta", "cuestan", "matricula", "nota", "notas", "modo",
+                "todo", "toda", "todos", "otra", "otro", "como", "cosa", "pasa", "paso", "casa", "caso", "dice",
+                "ayer", "hoy", "mas", "menos", "tema", "temas", "cuento", "cuantas", "cuantos", "sale", "salen",
+                "llega", "debe", "deben", "pago", "puede", "pueden", "hace", "hacen", "vence", "dura", "duran",
+                "curso", "cursos", "clase", "clases", "pide", "piden", "nivel"}
+
+
+def _corregir(texto: str, vocabulario: dict[str, str]) -> str:
+    conocidas = set(vocabulario.values())
+    corregidas = []
+    for palabra in texto.split():
+        palabra = _ABREVIATURAS.get(palabra, palabra)
+        if palabra in conocidas or palabra in _NO_CORREGIR or len(palabra) < 4:
+            corregidas.append(palabra)
+            continue
+        sonido = _sonido(palabra)
+        if sonido in vocabulario:
+            corregidas.append(vocabulario[sonido])
+            continue
+        tope = 1 if len(palabra) < 7 else 2
+        candidatas = [(d, p) for s, p in vocabulario.items() if len(p) >= 4 and (d := _distancia(sonido, s, tope)) <= tope]
+        corregidas.append(min(candidatas)[1] if candidatas else palabra)
+    return " ".join(" ".join(corregidas).split())
+
+
+_VOCABULARIO = _vocabulario([p for p, _ in _REGLAS + _DATOS_DEL_ALUMNO])
+
+
 def respuesta_de_conversacion(pregunta: str) -> str | None:
     """Texto fijo para saludos, gracias, despedidas, preguntas sobre el tutor o sobre datos del alumno."""
-    texto = _normalizar(pregunta)
+    texto = _corregir(_normalizar(pregunta), _VOCABULARIO)
     for patron, respuesta in _REGLAS:
         if patron.fullmatch(texto):
             return respuesta

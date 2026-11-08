@@ -68,3 +68,26 @@ def test_ninguna_pregunta_de_los_documentos_del_benchmark_se_responde_fija():
         assert respuesta_de_conversacion(p["pregunta"]) is None, p["id"]
     fijas = {p["id"] for p in preguntas["fuera"] if respuesta_de_conversacion(p["pregunta"])}
     assert fijas == {"F09"}  # "¿Cuál es mi nota del examen final?" → Calificaciones del Campus
+
+
+@pytest.mark.parametrize("mensaje,esperada", [
+    ("que curos llebo?", CAMPUS_CURSOS),          # lo escribió Alfredo probando el chat (08/11/2026)
+    ("ke cursos yevo", CAMPUS_CURSOS), ("mis kursos", CAMPUS_CURSOS),
+    ("kual es mi nota", CAMPUS_NOTAS), ("cuanto saqe", CAMPUS_NOTAS), ("mis notaz", CAMPUS_NOTAS),
+    ("q me falta entrejar", CAMPUS_ENTREGAS), ("tng tareas pendientes?", CAMPUS_ENTREGAS),
+    ("en ke me puedes alludar", PRESENTACION), ("ola", PRESENTACION), ("olaa", PRESENTACION),
+    ("grasias", GRACIAS), ("grax", GRACIAS),
+])
+def test_tolera_faltas_de_ortografia_y_abreviaturas(mensaje, esperada):
+    assert respuesta_de_conversacion(mensaje) == esperada
+
+
+@pytest.mark.parametrize("mensaje", [
+    "como se calcula el imbentario de seguridad",
+    "q es el lote economico de compra",
+    "kuantas oras dura el curso de pmbok",
+    "esta el reglamento en el campus?",
+    "cuanto cuesta la matricula",
+])
+def test_preguntas_con_faltas_sobre_documentos_siguen_al_buscador(mensaje):
+    assert respuesta_de_conversacion(mensaje) is None
