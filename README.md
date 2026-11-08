@@ -70,6 +70,23 @@ Otros comandos de la ingesta:
 | Qué hay cargado | `docker compose exec api python -m app.ingesta estado` |
 
 Los PDF de prueba se generan con `python scripts/generar_corpus_prueba.py` (necesita `pip install reportlab`, solo para desarrollo). Solo crea los que faltan; con `--todos` rehace también los existentes (cambian y la ingesta los carga como versión nueva).
+| Retirar los documentos de una carpeta (no borra nada) | `docker compose exec api python -m app.ingesta retirar /corpus/complementario` |
+
+#### Material complementario de los 3 cursos
+
+`corpus/complementario/` tiene **12 separatas** (4 por curso) con el contenido completo de cada tema, redactado a partir de fuentes públicas confiables (Chopra y Meindl, ASCM/SCOR DS, Hyndman, PMI/PMBOK, NIST/SEMATECH, Lean Enterprise Institute, AIAG, entre otras; cada documento termina con su bibliografía). Sirve para que el tutor responda con más detalle mientras el CEE no entregue su material:
+
+| Curso | Separatas |
+| --- | --- |
+| Gestión de la Cadena de Suministro | M1 Fundamentos y SCOR · M2 Pronóstico y S&OP · M3 Inventarios · M4 Indicadores |
+| Lean Six Sigma Green Belt | U1 Pensamiento Lean · U2 Six Sigma y DMAIC · U3 Herramientas estadísticas · U4 Proyecto de mejora |
+| Gestión de Proyectos con el PMBOK | U1 Fundamentos y alcance · U2 Cronograma · U3 Costos y valor ganado · U4 Riesgos e interesados |
+
+```bash
+docker compose exec api python -m app.ingesta corpus /corpus/complementario
+```
+
+Cada página dice **MATERIAL DE PRUEBA – no es material oficial ni validado por el CEE**. Se puede cargar junto con `corpus/prueba` (los títulos terminan en "(material complementario)" y no chocan). Cuando llegue el material del CEE se retira con `retirar` (arriba). El benchmark sigue usando solo `corpus/prueba`. Los textos están en `corpus/complementario/fuentes/*.md`; si se corrige uno, se regeneran los PDF con `python scripts/generar_corpus_complementario.py` y se vuelve a cargar la carpeta (entran como versión nueva).
 
 ### 6. Abrir el chat dentro del campus simulado
 

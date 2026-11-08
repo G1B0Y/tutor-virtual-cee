@@ -47,6 +47,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Carga de FAQs desde un CSV (pregunta, respuesta, fuente). Excel queda para después si el CEE lo prefiere.
 - [x] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
 - [x] Corpus de prueba mientras el CEE entrega el real: 6 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11; 6 PDF desde el 04/11). Falta probar el reemplazo con un archivo real.
+- [x] Material complementario de los 3 cursos (08/11, pedido de Alfredo): 12 separatas en `corpus/complementario/` redactadas con fuentes públicas y marcadas "MATERIAL DE PRUEBA" en cada página; comando `retirar` para sacarlas cuando llegue el material del CEE. Falta probar las respuestas en la PC de Alfredo.
 
 **Listo cuando:** se cargan 5+ PDFs y un CSV de FAQs, se reemplaza uno y la base solo deja vigente la versión nueva.
 
