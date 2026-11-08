@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { consultar, consultarSalud, LARGO_MAXIMO_PREGUNTA, type EstadoRespuesta, type Fuente } from "./api";
+import {
+  consultar,
+  consultarSalud,
+  LARGO_MAXIMO_PREGUNTA,
+  LimiteDePreguntas,
+  type EstadoRespuesta,
+  type Fuente,
+} from "./api";
 
 type Conexion = "revisando" | "disponible" | "degradado" | "sin-conexion";
 
@@ -69,9 +76,13 @@ export function Widget() {
       const r = await consultar(texto, anterior, documento);
       agregar({ de: "bot", texto: r.respuesta, estado: r.estado, fuentes: r.fuentes });
       setConexion("disponible");
-    } catch {
-      agregar({ de: "bot", estado: "error", texto: "No pude conectarme con el tutor. Intenta de nuevo en unos minutos." });
-      setConexion("sin-conexion");
+    } catch (error) {
+      if (error instanceof LimiteDePreguntas) {
+        agregar({ de: "bot", estado: "ocupado", texto: error.message });
+      } else {
+        agregar({ de: "bot", estado: "error", texto: "No pude conectarme con el tutor. Intenta de nuevo en unos minutos." });
+        setConexion("sin-conexion");
+      }
     } finally {
       setPensando(false);
     }

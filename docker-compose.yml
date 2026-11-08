@@ -56,6 +56,9 @@ services:
       UMBRAL_FAQ: ${UMBRAL_FAQ:-0.10}
       MARGEN_FUENTES: ${MARGEN_FUENTES:-0.03}
       MINIMO_RESPALDO: ${MINIMO_RESPALDO:-0.6}
+      LIMITE_POR_MINUTO: ${LIMITE_POR_MINUTO:-8}
+      CONFIAR_EN_PROXY: ${CONFIAR_EN_PROXY:-false}
+      CLAVE_CEE: ${CLAVE_CEE:-}
       EMBEDDINGS_PROVEEDOR: ${EMBEDDINGS_PROVEEDOR:-sentence-transformers}
     volumes:
       # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.

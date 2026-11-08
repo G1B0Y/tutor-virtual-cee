@@ -128,6 +128,21 @@ docker compose up -d
 docker compose exec api python -m app.ingesta reindexar
 ```
 
+### 9. Consultas pendientes (para el CEE) y límite por minuto
+
+Lo que el tutor no supo responder queda guardado (solo la pregunta, el motivo y la fecha). Para verlo:
+
+1. En `.env`, pon una clave larga en `CLAVE_CEE` (por ejemplo, 30 letras y números al azar) y reinicia la API con `docker compose up -d api`. Sin clave, el listado está apagado.
+2. Abre http://localhost:8000/docs, sección **CEE** → `GET /consultas-pendientes` → *Try it out*, escribe la clave en `X-Clave-CEE` y *Execute*. Con `POST /consultas-pendientes/{id}/atendida` se marca una como atendida, con una nota (por ejemplo, "se agregó una FAQ").
+
+En PowerShell:
+
+```powershell
+Invoke-RestMethod http://localhost:8000/consultas-pendientes -Headers @{ "X-Clave-CEE" = "tu-clave" }
+```
+
+Cada alumno puede hacer `LIMITE_POR_MINUTO` preguntas por minuto (8 por defecto; 0 = sin límite). Si se pasa, el chat le pide esperar unos segundos. Detrás de Nginx, en el servidor, se pone `CONFIAR_EN_PROXY=true`, para que cuente la IP de cada alumno y no la del proxy.
+
 ### Comandos
 
 | Qué | Comando |

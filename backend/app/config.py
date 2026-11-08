@@ -49,6 +49,15 @@ class Configuracion(BaseSettings):
     # respuesta que debe estar en los documentos o la pregunta; si no, la oración se quita. Los elementos de una lista
     # deben aparecer como frase en los documentos. Regla de Alfredo (08/11/2026): no inventar nada.
     minimo_respaldo: float = 0.6
+    # Preguntas por alumno y por minuto (RF-M06); 0 = sin límite. Con una sola generación a la vez, un alumno que
+    # manda muchas seguidas deja esperando a los demás.
+    limite_por_minuto: int = 8
+    # true solo si la API está detrás de un proxy propio (Nginx en el servidor): entonces la IP del alumno sale de
+    # X-Forwarded-For. En local, false (si no, cualquiera podría saltarse el límite inventando la cabecera).
+    confiar_en_proxy: bool = False
+    # Clave para que el CEE vea las consultas pendientes (cabecera X-Clave-CEE). Vacía = listado desactivado.
+    # Va solo en .env, nunca en el repo.
+    clave_cee: str = ""
     # Canal humano: lo define el CEE (pendiente). Se muestra cuando el bot no puede responder.
     mensaje_derivacion: str = (
         "Dejé registrada tu consulta para que el equipo del CEE la revise. "

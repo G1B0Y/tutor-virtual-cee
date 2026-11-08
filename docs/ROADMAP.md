@@ -71,9 +71,9 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 - [x] `POST /consulta` → respuesta, fuentes y estado (`respondida`, `faq`, `sin_evidencia`, `sin_llm`, `ocupado`). Falta el id de conversación y el token de sesión.
 - [x] `GET /salud` (API, base y Ollama; avisa si falta descargar el modelo).
-- [ ] `POST /consultas-pendientes` para dejar una consulta a atención diferida (mínimos datos) y listado para el CEE (protegido).
+- [x] Consultas pendientes: se guardan solas al abstenerse; listado para el CEE (`GET /consultas-pendientes`, protegido con `X-Clave-CEE`) y marcar atendida (08/11). Falta, si se pide, que el alumno deje un contacto.
 - [x] Cola con **una generación activa**, cola de 3, timeout y aviso de "sistema ocupado".
-- [ ] Límite de solicitudes por usuario y por minuto.
+- [x] Límite de solicitudes por usuario y por minuto (08/11: 8 por defecto, HTTP 429; por IP hasta que el Campus pase un id del alumno).
 - [x] FAQs sin LLM cuando la pregunta coincide con una FAQ; con Ollama caído, el fragmento más cercano con su fuente.
 - [x] Registro de tiempos y estado de cada consulta en `eventos`, sin el texto de la pregunta. Falta el registro de errores.
 - [x] Validación de entradas (2 a 500 caracteres) con Pydantic; pruebas con pytest.

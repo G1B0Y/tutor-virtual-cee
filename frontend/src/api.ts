@@ -26,6 +26,9 @@ export type RespuestaConsulta = {
 
 export const LARGO_MAXIMO_PREGUNTA = 500;
 
+/** El alumno pasó el límite de preguntas por minuto (HTTP 429): el tutor está bien, solo hay que esperar. */
+export class LimiteDePreguntas extends Error {}
+
 /** Seguimientos ("ese curso", "¿y el tema dos?"): `anterior` es la pregunta previa del alumno en este chat y
  * `documento`, el documento de la respuesta previa. Solo viajan en la consulta; el servidor no los guarda. */
 export async function consultar(
@@ -40,6 +43,10 @@ export async function consultar(
     body: JSON.stringify({ pregunta, ...(anterior ? { anterior } : {}), ...(documento ? { documento } : {}) }),
     signal: senal,
   });
+  if (respuesta.status === 429) {
+    const cuerpo = (await respuesta.json().catch(() => ({}))) as { detail?: string };
+    throw new LimiteDePreguntas(cuerpo.detail ?? "Hiciste muchas preguntas seguidas. Espera un momento.");
+  }
   if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
   return respuesta.json() as Promise<RespuestaConsulta>;
 }
