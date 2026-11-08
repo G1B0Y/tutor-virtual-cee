@@ -177,3 +177,12 @@ def test_los_mensajes_informativos_de_la_api_se_ven_en_el_log():
 
     assert registro.isEnabledFor(logging.INFO)
     assert registro.handlers
+
+
+def test_prompt_pide_no_explicar_temas_que_el_documento_solo_enumera():
+    """granite explicó la unidad 1 de PMBOK con conocimiento propio: el temario solo lista los temas (08/11/2026)."""
+    from app.rag.prompt import INSTRUCCIONES, armar_mensajes
+
+    assert "solo enumeran los temas" in INSTRUCCIONES and "separata" in INSTRUCCIONES
+    sin_anterior = armar_mensajes("¿Qué es el EOQ?", [])[1]["content"]
+    assert "<pregunta_anterior>" not in sin_anterior

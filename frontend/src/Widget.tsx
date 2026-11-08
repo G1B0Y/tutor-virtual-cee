@@ -58,11 +58,12 @@ export function Widget() {
     e.preventDefault();
     const texto = pregunta.trim();
     if (texto.length < 2 || pensando) return;
+    const anterior = [...mensajes].reverse().find((m) => m.de === "alumno")?.texto;
     agregar({ de: "alumno", texto });
     setPregunta("");
     setPensando(true);
     try {
-      const r = await consultar(texto);
+      const r = await consultar(texto, anterior);
       agregar({ de: "bot", texto: r.respuesta, estado: r.estado, fuentes: r.fuentes });
       setConexion("disponible");
     } catch {

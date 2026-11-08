@@ -85,9 +85,12 @@ def _registrar(conexion: psycopg.Connection, r: Respuesta, pregunta: str, modelo
 
 
 def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm: LLM, turno: Turno,
-              config: Configuracion) -> Respuesta:
+              config: Configuracion, anterior: str | None = None) -> Respuesta:
+    """`anterior`: la pregunta previa del alumno en el mismo chat (la manda el navegador; no se guarda). Se usa
+    solo si la pregunta sola no encuentra nada, para entender seguimientos como "dame un resumen de ese curso"."""
     inicio = time.monotonic()
     pregunta = " ".join(pregunta.split())
+    anterior = " ".join((anterior or "").split()) or None
 
     def terminar(r: Respuesta, modelo: str | None = None) -> Respuesta:
         r.ms = int((time.monotonic() - inicio) * 1000)
@@ -106,6 +109,13 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
 
     encontrados = buscar_fragmentos(conexion, vector, config.fragmentos_por_consulta)
     utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
+    contexto = None
+    if not utiles and anterior and not respuesta_de_conversacion(anterior):
+        # Seguimiento: "estoy llevando ese curso, dame un resumen del tema uno" no dice qué curso (08/11/2026).
+        juntas = emb.codificar([f"{anterior} {pregunta}"], es_consulta=True)[0]
+        encontrados = buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta)
+        utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
+        contexto = anterior if utiles else None
     if not utiles:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
                                   + config.mensaje_derivacion))
@@ -113,7 +123,7 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     if not turno.tomar():
         return terminar(Respuesta(OCUPADO, "Hay muchas consultas en este momento. Intenta de nuevo en un minuto."))
     try:
-        texto = llm.generar(armar_mensajes(pregunta, utiles))
+        texto = llm.generar(armar_mensajes(pregunta, utiles, contexto))
     except ErrorLLM:
         mejor = utiles[0]
         return terminar(Respuesta(

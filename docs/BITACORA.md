@@ -4,6 +4,7 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 
 ## 08/11/2026
 
+- Alfredo preguntó por el temario de PMBOK y luego "ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO": se abstuvo porque el tutor no recordaba la conversación. **Arreglo:** el chat manda la pregunta anterior (no se guarda); si la actual sola no encuentra nada, se busca con las dos y el modelo recibe la anterior como contexto. También se vio que granite explicaba temas que el temario solo enumera: nueva regla 10 del prompt (enumerar y remitir a la separata). 4 pruebas más (118).
 - Alfredo probó "que curos llebo?" y salió "No encontré…": las reglas pedían las palabras exactas. **Arreglo:** antes de aplicar las reglas, cada palabra se corrige a la del vocabulario que suena igual (h, b/v, ll/y, s/c/z, qu/k) o está a 1–2 letras, más abreviaturas de chat (q, ke, tng, grax). Las preguntas de los documentos con faltas siguen al buscador (e5 las entiende por significado). 18 pruebas más (114).
 - **Pendiente:** calibrar el margen de fuentes; verificar las licencias en la ficha oficial.
 

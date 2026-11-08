@@ -26,11 +26,12 @@ export type RespuestaConsulta = {
 
 export const LARGO_MAXIMO_PREGUNTA = 500;
 
-export async function consultar(pregunta: string, senal?: AbortSignal): Promise<RespuestaConsulta> {
+/** `anterior`: la pregunta previa del alumno en este chat, para entender seguimientos ("ese curso"). */
+export async function consultar(pregunta: string, anterior?: string, senal?: AbortSignal): Promise<RespuestaConsulta> {
   const respuesta = await fetch(`${API_URL}/consulta`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pregunta }),
+    body: JSON.stringify(anterior ? { pregunta, anterior } : { pregunta }),
     signal: senal,
   });
   if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);

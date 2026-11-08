@@ -137,3 +137,39 @@ def test_saludo_responde_sin_buscar_ni_dejar_pendiente(con_corpus):
     assert con_corpus.execute("SELECT count(*) FROM consultas_pendientes").fetchone()[0] == pendientes
     assert con_corpus.execute(
         "SELECT estado FROM eventos WHERE tipo = 'consulta' ORDER BY id DESC LIMIT 1").fetchone()[0] == ORIENTACION
+
+
+SEGUIMIENTO = "ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO"
+ANTERIOR = "¿Qué temas tiene el curso de Gestión de Proyectos con el PMBOK?"
+
+
+def test_seguimiento_usa_la_pregunta_anterior_para_entender_ese_curso(con_corpus):
+    """Alfredo preguntó por el temario de PMBOK y luego "ese curso … tema uno": se abstenía (08/11/2026)."""
+    config = CONFIG.model_copy(update={"umbral_distancia": 0.65})
+    sola = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), config)
+    assert sola.estado == SIN_EVIDENCIA
+
+    llm = LLMFalso()
+    r = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), llm, Turno(3), config, anterior=ANTERIOR)
+    assert r.estado == RESPONDIDA
+    assert any("PMBOK" in f.titulo for f in r.fuentes)
+    usuario = llm.recibido[-1]["content"]
+    assert f"<pregunta_anterior>\n{ANTERIOR}\n</pregunta_anterior>" in usuario
+    assert f"<pregunta_del_alumno>\n{SEGUIMIENTO}\n</pregunta_del_alumno>" in usuario
+
+
+def test_la_pregunta_anterior_no_se_usa_si_la_actual_se_entiende_sola(con_corpus):
+    llm = LLMFalso()
+    r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG,
+                  anterior=ANTERIOR)
+    assert r.estado == RESPONDIDA
+    assert "<pregunta_anterior>" not in llm.recibido[-1]["content"]
+
+
+def test_la_pregunta_anterior_no_se_guarda_en_pendientes(con_corpus):
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    responder("¿Y el tema dos?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), estricta,
+              anterior="dato personal de prueba 12345")
+    guardadas = [p for (p,) in con_corpus.execute("SELECT pregunta FROM consultas_pendientes").fetchall()]
+    assert "¿Y el tema dos?" in guardadas
+    assert not any("12345" in p for p in guardadas)
