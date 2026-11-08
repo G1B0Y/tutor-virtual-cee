@@ -152,7 +152,7 @@ def test_seguimiento_usa_la_pregunta_anterior_para_entender_ese_curso(con_corpus
     llm = LLMFalso()
     r = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), llm, Turno(3), config, anterior=ANTERIOR)
     assert r.estado == RESPONDIDA
-    assert any("PMBOK" in f.titulo for f in r.fuentes)
+    assert r.fuentes and all("PMBOK" in f.titulo for f in r.fuentes)  # solo el curso de la pregunta anterior
     usuario = llm.recibido[-1]["content"]
     assert f"<pregunta_anterior>\n{ANTERIOR}\n</pregunta_anterior>" in usuario
     assert f"<pregunta_del_alumno>\n{SEGUIMIENTO}\n</pregunta_del_alumno>" in usuario

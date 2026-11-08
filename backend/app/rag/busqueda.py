@@ -23,13 +23,16 @@ class FaqEncontrada:
     distancia: float
 
 
-def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite: int) -> list[FragmentoEncontrado]:
+def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite: int,
+                      titulo: str | None = None) -> list[FragmentoEncontrado]:
+    """`titulo`: solo fragmentos de ese documento (seguimientos: "ese curso" es el de la pregunta anterior)."""
     filas = conexion.execute(
         """SELECT texto, titulo, pagina, embedding <=> %s::vector AS distancia
              FROM fragmentos_vigentes
+            WHERE %s::text IS NULL OR titulo = %s
             ORDER BY distancia
             LIMIT %s""",
-        (como_vector(vector), limite),
+        (como_vector(vector), titulo, titulo, limite),
     ).fetchall()
     return [FragmentoEncontrado(t, ti, p, float(d)) for t, ti, p, d in filas]
 

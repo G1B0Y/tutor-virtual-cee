@@ -1,5 +1,6 @@
 """Responde una pregunta del alumno: FAQ → búsqueda → LLM, con abstención y degradación controlada."""
 
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -63,14 +64,29 @@ def _fuentes(fragmentos: list[FragmentoEncontrado]) -> list[Fuente]:
     return vistas
 
 
+_NUMEROS = {"uno": "1", "primer": "1", "primero": "1", "primera": "1", "dos": "2", "segundo": "2", "segunda": "2",
+            "tres": "3", "tercer": "3", "tercero": "3", "tercera": "3", "cuatro": "4", "cuarto": "4", "cuarta": "4",
+            "cinco": "5", "quinto": "5", "quinta": "5", "seis": "6", "sexto": "6", "sexta": "6"}
+_N = "|".join(sorted(_NUMEROS, key=len, reverse=True)) + r"|\d+"
+_TEMA_N = re.compile(rf"\b(tema|unidad|m[oó]dulo|cap[ií]tulo)\s+({_N})\b", re.IGNORECASE)
+_N_TEMA = re.compile(rf"\b({_N})\s+(tema|unidad|m[oó]dulo|cap[ií]tulo)\b", re.IGNORECASE)
+
+
+def _numero(palabra: str) -> str:
+    return _NUMEROS.get(palabra.lower(), palabra)
+
+
 def texto_para_buscar(texto: str) -> str:
-    """Si el alumno escribe casi todo en MAYÚSCULAS (pasa mucho desde el celular), lo pasa a minúsculas para el
-    embedding: con e5-small "DAME UN RESUMEN DEL TEMA UNO" quedaba a 0,216 del temario y en minúsculas, a 0,16
-    (08/11/2026). Las siglas sueltas en un texto normal (PMBOK, EOQ) se dejan."""
+    """Ajusta la pregunta solo para el embedding (al modelo le llega tal cual):
+    - Casi todo en MAYÚSCULAS (pasa mucho desde el celular) → minúsculas: con e5-small "DAME UN RESUMEN DEL TEMA UNO"
+      quedaba a 0,216 del temario y en minúsculas, a 0,16 (08/11/2026). Las siglas sueltas (PMBOK, EOQ) se dejan.
+    - "tema uno", "primer tema", "módulo dos" → "unidad 1", "unidad 2"…: los temarios dicen "Unidad 1" y "tema uno"
+      se parecía más a otras unidades."""
     letras = [c for c in texto if c.isalpha()]
     if len(letras) >= 8 and sum(c.isupper() for c in letras) / len(letras) > 0.6:
-        return texto.lower()
-    return texto
+        texto = texto.lower()
+    texto = _TEMA_N.sub(lambda m: f"{'unidad' if m[1].lower() == 'tema' else m[1]} {_numero(m[2])}", texto)
+    return _N_TEMA.sub(lambda m: f"{'unidad' if m[2].lower() == 'tema' else m[2]} {_numero(m[1])}", texto)
 
 
 def seleccionar(encontrados: list[FragmentoEncontrado], umbral: float, margen: float) -> list[FragmentoEncontrado]:
@@ -122,8 +138,11 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     contexto = None
     if not utiles and anterior and not respuesta_de_conversacion(anterior):
         # Seguimiento: "estoy llevando ese curso, dame un resumen del tema uno" no dice qué curso (08/11/2026).
+        # "ese curso" es el documento de la pregunta anterior: se busca solo en él para no mezclar cursos.
+        previo = buscar_fragmentos(conexion, emb.codificar([texto_para_buscar(anterior)], es_consulta=True)[0], 1)
+        documento = previo[0].titulo if previo and previo[0].distancia <= config.umbral_distancia else None
         juntas = emb.codificar([f"{texto_para_buscar(anterior)}. {texto_para_buscar(pregunta)}"], es_consulta=True)[0]
-        encontrados = buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta)
+        encontrados = buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta, documento)
         utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
         contexto = anterior if utiles else None
     if not utiles:

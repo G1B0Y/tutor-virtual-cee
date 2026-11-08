@@ -195,3 +195,13 @@ def test_texto_para_buscar_pasa_a_minusculas_lo_escrito_en_mayusculas():
     assert texto_para_buscar("ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN") == "estoy llevando ese curso, dame un resumen"
     assert texto_para_buscar("¿Qué temas tiene el curso de PMBOK?") == "¿Qué temas tiene el curso de PMBOK?"
     assert texto_para_buscar("¿Qué es EOQ?") == "¿Qué es EOQ?"  # pocas letras: siglas, se dejan
+
+
+def test_texto_para_buscar_lleva_tema_uno_a_unidad_1():
+    """El temario dice "Unidad 1"; con "tema uno" el modelo tomó las unidades 3 y 4 (08/11/2026)."""
+    from app.consulta import texto_para_buscar
+
+    assert texto_para_buscar("DAME UN RESUMEN DEL TEMA UNO") == "dame un resumen del unidad 1"
+    assert texto_para_buscar("explícame el primer tema") == "explícame el unidad 1"
+    assert texto_para_buscar("¿qué ve el módulo dos?") == "¿qué ve el módulo 2?"
+    assert texto_para_buscar("¿Qué temas se ven en el módulo de pronóstico?") == "¿Qué temas se ven en el módulo de pronóstico?"
