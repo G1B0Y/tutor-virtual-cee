@@ -211,3 +211,16 @@ def test_aclaracion_entre_parentesis_sin_respaldo_se_quita_y_la_oracion_queda():
     assert texto == "El project charter usa el árbol de CTQ y la voz del cliente."
     assert revisar("El acta (project charter) incluye el caso de negocio.", [fragmento])[0] == (
         "El acta (project charter) incluye el caso de negocio.")
+
+
+def test_kanji_inventados_se_quitan_y_la_lista_inventada_se_descarta():
+    """granite escribió las 5S con nombres y kanji inventados ("Seiri (ソリ): Seguro…", 08/11/2026)."""
+    fragmento = ("Las 5S son una metodología para organizar, limpiar y mantener el lugar de trabajo. Su nombre viene "
+                 "de cinco palabras japonesas: Seiri (clasificar), Seiton (ordenar), Seiso (limpiar), Seiketsu "
+                 "(estandarizar) y Shitsuke (disciplina).")
+    bien = "1. Seiri (整理): clasificar\n2. Seiton: ordenar\n3. Seiso: limpiar\n4. Seiketsu: estandarizar\n5. Shitsuke: disciplina"
+    texto, _ = revisar(bien, [fragmento], "¿Qué son las 5S?")
+    assert texto is not None and "整" not in texto and texto.startswith("1. Seiri: clasificar")
+    inventada = ("1. Seiri (ソリ): Seguro\n2. Seiton (進取): Ordenar\n3. Shitsu (整理): Limpieza\n"
+                 "4. Seiseki (定め): Control\n5. Shinshitsu (新しさ): Sustentación")
+    assert revisar(inventada, [fragmento], "¿Qué son las 5S?")[0] is None

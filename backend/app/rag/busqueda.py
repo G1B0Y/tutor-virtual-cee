@@ -29,6 +29,7 @@ class FragmentoEncontrado:
     pagina: int | None
     distancia: float
     puntaje: float = 0.0
+    orden: int | None = None  # posición en su documento (para traer el fragmento que sigue)
 
 
 @dataclass(frozen=True)
@@ -146,7 +147,7 @@ def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite:
     if texto is None or umbral is None:
         return _por_distancia(conexion, vector, limite, titulo)
     cercanos = conexion.execute(
-        """SELECT id, texto, titulo, pagina, embedding <=> %s::vector AS distancia
+        """SELECT id, texto, titulo, pagina, orden, embedding <=> %s::vector AS distancia
              FROM fragmentos_vigentes
             WHERE %s::text IS NULL OR titulo = %s
             ORDER BY distancia
@@ -161,11 +162,11 @@ def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite:
     faltan = [i for i in mejores if i not in {f[0] for f in cercanos}]
     if faltan:
         cercanos += conexion.execute(
-            """SELECT id, texto, titulo, pagina, embedding <=> %s::vector AS distancia
+            """SELECT id, texto, titulo, pagina, orden, embedding <=> %s::vector AS distancia
                  FROM fragmentos_vigentes WHERE id = ANY(%s)""",
             (como_vector(vector), faltan),
         ).fetchall()
-    dentro = [float(f[4]) for f in cercanos if float(f[4]) <= umbral]
+    dentro = [float(f[5]) for f in cercanos if float(f[5]) <= umbral]
     mas_cerca = min(dentro) if dentro else umbral
     escala = umbral - mas_cerca
 
@@ -173,17 +174,31 @@ def buscar_fragmentos(conexion: psycopg.Connection, vector: list[float], limite:
         v = (umbral - distancia) / escala if escala > 0 else (1.0 if distancia <= umbral else 0.0)
         return v + peso_lexico * lexicos.get(i, 0.0)
 
-    encontrados = [FragmentoEncontrado(t, ti, p, float(d), puntaje(float(d), i)) for i, t, ti, p, d in cercanos]
+    encontrados = [FragmentoEncontrado(t, ti, p, float(d), puntaje(float(d), i), o) for i, t, ti, p, o, d in cercanos]
     # Si la pregunta nombra una sigla del material (CPI, OEE, 5S) y hay fragmentos que la tienen, los que no la
     # tienen bajan: con "¿Qué indica un CPI menor que 1?" el Cp de Lean quedaba primero por "indica" y "menor".
     con_sigla = {i for i, *_ in cercanos if siglas & indice.raices.get(i, set())}
     if con_sigla and any(float(d) <= umbral for i, *_, d in cercanos if i in con_sigla):
         encontrados = [f if i in con_sigla else FragmentoEncontrado(f.texto, f.titulo, f.pagina, f.distancia,
-                                                                    f.puntaje - PENALIZACION_SIN_SIGLA)
+                                                                    f.puntaje - PENALIZACION_SIN_SIGLA, f.orden)
                        for f, (i, *_) in zip(encontrados, cercanos)]
     # Primero los que pasan el umbral; entre ellos, por puntaje.
     encontrados.sort(key=lambda f: (f.distancia <= umbral, f.puntaje), reverse=True)
     return encontrados[:limite]
+
+
+def siguiente_fragmento(conexion: psycopg.Connection, vector: list[float],
+                        f: FragmentoEncontrado) -> FragmentoEncontrado | None:
+    """El fragmento que sigue a `f` en su documento (misma página o la siguiente)."""
+    if f.orden is None:
+        return None
+    fila = conexion.execute(
+        """SELECT texto, titulo, pagina, embedding <=> %s::vector AS distancia, orden
+             FROM fragmentos_vigentes
+            WHERE titulo = %s AND orden = %s AND pagina BETWEEN %s AND %s + 1""",
+        (como_vector(vector), f.titulo, f.orden + 1, f.pagina or 0, f.pagina or 0),
+    ).fetchone()
+    return FragmentoEncontrado(fila[0], fila[1], fila[2], float(fila[3]), 0.0, fila[4]) if fila else None
 
 
 def _por_distancia(conexion: psycopg.Connection, vector: list[float], limite: int,

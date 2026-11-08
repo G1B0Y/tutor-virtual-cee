@@ -10,11 +10,12 @@ import psycopg
 
 from app.config import Configuracion
 from app.conversacion import respuesta_de_conversacion
-from app.rag.busqueda import FragmentoEncontrado, buscar_faq, buscar_fragmentos, fragmentos_que_dicen
+from app.rag.busqueda import (FragmentoEncontrado, buscar_faq, buscar_fragmentos, fragmentos_que_dicen,
+                               siguiente_fragmento, terminos)
 from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
 from app.rag.prompt import SIN_EVIDENCIA as SIN_EVIDENCIA_DEL_MODELO
-from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta
+from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta, mensajes_de_reintento
 from app.rag.respaldo import revisar
 
 registro = logging.getLogger("tutor")
@@ -160,6 +161,22 @@ def _con_unidad_pedida(conexion: psycopg.Connection, vector: list[float], pregun
     return extra + [f for f in utiles if f not in extra]
 
 
+def _con_continuacion(conexion: psycopg.Connection, vector: list[float], pregunta: str,
+                      utiles: list[FragmentoEncontrado]) -> list[FragmentoEncontrado]:
+    """Si el mejor fragmento termina hablando de lo que se pregunta, el tema sigue en el fragmento siguiente: lo
+    agrega. "Principios del PMBOK 8.ª edición": el fragmento terminaba en "Octava edición (noviembre de 2025):" y la
+    lista de principios estaba en el que sigue, que no llegaba al modelo (08/11/2026)."""
+    if not utiles:
+        return utiles
+    mejor = utiles[0]
+    if not set(terminos(mejor.texto[-200:])) & set(terminos(pregunta)):
+        return utiles
+    siguiente = siguiente_fragmento(conexion, vector, mejor)
+    if not siguiente or any((f.titulo, f.orden) == (siguiente.titulo, siguiente.orden) for f in utiles):
+        return utiles
+    return [mejor, siguiente, *utiles[1:]]
+
+
 def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm: LLM, turno: Turno,
               config: Configuracion, anterior: str | None = None, documento_anterior: str | None = None) -> Respuesta:
     """Seguimientos (los manda el navegador; no se guardan): `anterior` es la pregunta previa del alumno en el mismo
@@ -218,10 +235,33 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
                                   + config.mensaje_derivacion))
 
+    utiles = _con_continuacion(conexion, vector, pregunta, utiles)
+
+    def revisado(texto: str) -> str:
+        if es_sin_evidencia(texto):
+            return texto
+        # Lo mismo que vio el modelo: número, título y página de cada documento (puede citarlos) y su texto.
+        vistos = [f"[{n}] {f.titulo}, página {f.pagina or ''}. {f.texto}" for n, f in enumerate(utiles, 1)]
+        resultado, motivo = revisar(limpiar_respuesta(texto), vistos,
+                                    f"{anterior or ''} {pregunta} {texto_para_buscar(pregunta)}", config.minimo_respaldo)
+        if resultado is None:
+            registro.warning("Respuesta descartada: %s", motivo)
+            return SIN_EVIDENCIA_DEL_MODELO
+        if motivo:
+            registro.info("Respuesta recortada: %s", motivo)
+        return resultado
+
     if not turno.tomar():
         return terminar(Respuesta(OCUPADO, "Hay muchas consultas en este momento. Intenta de nuevo en un minuto."))
     try:
-        texto = llm.generar(armar_mensajes(pregunta, utiles, contexto))
+        mensajes = armar_mensajes(pregunta, utiles, contexto)
+        texto = revisado(llm.generar(mensajes))
+        if es_sin_evidencia(texto) and utiles[0].puntaje >= config.puntaje_reintento:
+            # granite varía: con los mismos documentos respondió bien el OEE y el Cpk en una ronda y en otra se
+            # abstuvo, o escribió las 5S con nombres y kanji inventados (08/11/2026). Si la evidencia es fuerte
+            # (el fragmento tiene casi todas las palabras de la pregunta) se le pide una vez más.
+            registro.info("Segundo intento: había evidencia fuerte (puntaje %.2f)", utiles[0].puntaje)
+            texto = revisado(llm.generar(mensajes_de_reintento(mensajes)))
     except ErrorLLM:
         mejor = utiles[0]
         return terminar(Respuesta(
@@ -233,18 +273,6 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     finally:
         turno.liberar()
 
-    if not es_sin_evidencia(texto):
-        # Lo mismo que vio el modelo: número, título y página de cada documento (puede citarlos) y su texto.
-        vistos = [f"[{n}] {f.titulo}, página {f.pagina or ''}. {f.texto}" for n, f in enumerate(utiles, 1)]
-        revisado, motivo = revisar(limpiar_respuesta(texto), vistos,
-                                   f"{anterior or ''} {pregunta} {texto_para_buscar(pregunta)}", config.minimo_respaldo)
-        if revisado is None:
-            registro.warning("Respuesta descartada: %s", motivo)
-            texto = SIN_EVIDENCIA_DEL_MODELO
-        else:
-            if motivo:
-                registro.info("Respuesta recortada: %s", motivo)
-            texto = revisado
     if es_sin_evidencia(texto):
         # Los documentos se encontraron pero no traen la respuesta (p. ej. el temario nombra "los 8 desperdicios"
         # sin decir cuáles son): se dice qué se revisó, para que el alumno sepa dónde buscar (08/11/2026).

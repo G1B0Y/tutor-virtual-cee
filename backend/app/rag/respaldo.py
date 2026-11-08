@@ -128,11 +128,15 @@ def revisar(respuesta: str, fragmentos: list[str], pregunta: str = "", minimo: f
         # Una aclaración entre paréntesis sin respaldo se quita sola, sin tocar la oración: granite escribió
         # "el árbol de CTQ (Customer-Supplier Quality)" y CTQ es Critical to Quality (08/11/2026).
         dentro = m.group(1)
+        if not dentro.strip():
+            return ""
         propias = _raices(dentro)
         if not _numeros(dentro) <= cifras or (propias and len(propias & conocidas) / len(propias) < minimo):
             return ""
         return m.group(0)
 
+    # Ningún documento del CEE está en japonés ni en chino: granite escribió "Seiri (ソリ)" y otros kanji inventados.
+    respuesta = re.sub(r"[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]+", "", respuesta)
     respuesta = re.sub(r"[ \t]*\(([^()]*)\)", aclaracion_ok, respuesta)
 
     def cifras_ok(texto: str) -> bool:

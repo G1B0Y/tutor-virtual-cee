@@ -47,6 +47,9 @@ class Configuracion(BaseSettings):
     # Fuentes: solo los fragmentos con un puntaje casi tan alto como el mejor (mejor − este margen). Reemplaza a
     # MARGEN_FUENTES (en distancias de e5: 0.03), que ya no se usa. Provisional: falta calibrarlo con el benchmark.
     margen_puntaje: float = 0.4
+    # Si el modelo se abstiene (o el control descarta su respuesta) y el mejor fragmento tiene al menos este puntaje
+    # (máx. 2: el más cercano y con todas las palabras de la pregunta), se le pide una segunda vez.
+    puntaje_reintento: float = 1.6
     # Control de respaldo (app/rag/respaldo.py): parte mínima de las palabras con contenido de cada oración de la
     # respuesta que debe estar en los documentos o la pregunta; si no, la oración se quita. Los elementos de una lista
     # deben aparecer como frase en los documentos. Regla de Alfredo (08/11/2026): no inventar nada.
