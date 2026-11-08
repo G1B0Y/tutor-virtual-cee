@@ -186,3 +186,12 @@ def test_prompt_pide_no_explicar_temas_que_el_documento_solo_enumera():
     assert "solo enumeran los temas" in INSTRUCCIONES and "separata" in INSTRUCCIONES
     sin_anterior = armar_mensajes("¿Qué es el EOQ?", [])[1]["content"]
     assert "<pregunta_anterior>" not in sin_anterior
+
+
+def test_texto_para_buscar_pasa_a_minusculas_lo_escrito_en_mayusculas():
+    """"ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO" no pasaba el umbral con e5-small (08/11/2026)."""
+    from app.consulta import texto_para_buscar
+
+    assert texto_para_buscar("ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN") == "estoy llevando ese curso, dame un resumen"
+    assert texto_para_buscar("¿Qué temas tiene el curso de PMBOK?") == "¿Qué temas tiene el curso de PMBOK?"
+    assert texto_para_buscar("¿Qué es EOQ?") == "¿Qué es EOQ?"  # pocas letras: siglas, se dejan

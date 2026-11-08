@@ -63,6 +63,16 @@ def _fuentes(fragmentos: list[FragmentoEncontrado]) -> list[Fuente]:
     return vistas
 
 
+def texto_para_buscar(texto: str) -> str:
+    """Si el alumno escribe casi todo en MAYÚSCULAS (pasa mucho desde el celular), lo pasa a minúsculas para el
+    embedding: con e5-small "DAME UN RESUMEN DEL TEMA UNO" quedaba a 0,216 del temario y en minúsculas, a 0,16
+    (08/11/2026). Las siglas sueltas en un texto normal (PMBOK, EOQ) se dejan."""
+    letras = [c for c in texto if c.isalpha()]
+    if len(letras) >= 8 and sum(c.isupper() for c in letras) / len(letras) > 0.6:
+        return texto.lower()
+    return texto
+
+
 def seleccionar(encontrados: list[FragmentoEncontrado], umbral: float, margen: float) -> list[FragmentoEncontrado]:
     """Fragmentos bajo el umbral y casi tan cercanos como el mejor: son los que se dan al modelo y se citan."""
     utiles = [f for f in encontrados if f.distancia <= umbral]
@@ -101,7 +111,7 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     if fija:
         return terminar(Respuesta(ORIENTACION, fija))
 
-    vector = emb.codificar([pregunta], es_consulta=True)[0]
+    vector = emb.codificar([texto_para_buscar(pregunta)], es_consulta=True)[0]
 
     faq = buscar_faq(conexion, vector)
     if faq and faq.distancia <= config.umbral_faq:
@@ -112,7 +122,7 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     contexto = None
     if not utiles and anterior and not respuesta_de_conversacion(anterior):
         # Seguimiento: "estoy llevando ese curso, dame un resumen del tema uno" no dice qué curso (08/11/2026).
-        juntas = emb.codificar([f"{anterior} {pregunta}"], es_consulta=True)[0]
+        juntas = emb.codificar([f"{texto_para_buscar(anterior)}. {texto_para_buscar(pregunta)}"], es_consulta=True)[0]
         encontrados = buscar_fragmentos(conexion, juntas, config.fragmentos_por_consulta)
         utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_fuentes)
         contexto = anterior if utiles else None
