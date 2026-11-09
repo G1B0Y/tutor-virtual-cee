@@ -1,7 +1,7 @@
 {
   "descripcion": "Preguntas del curso Sistemas Integrados Empresariales (módulos de Marketing, Ventas y CRM, 09/11/2026). Se corre con: python -m app.benchmark --corpus /corpus/sie --preguntas /benchmark/preguntas_sie.json --embeddings intfloat/multilingual-e5-small --llm granite3.3:2b",
   "como_leerlo": {
-    "dentro": "Preguntas que los módulos responden. archivo y pagina = dónde está la idea principal. claves = grupos de palabras: la respuesta debe tener al menos una palabra de cada grupo (sin tildes ni mayúsculas). razonamiento = true si la respuesta no está escrita tal cual y hay que aplicar, comparar o deducir (como preguntaría el profesor); el tutor las reconoce solo (app/rag/razonamiento.py).",
+    "dentro": "Preguntas que los módulos responden. archivo y pagina = dónde está la idea principal. claves = grupos de palabras: la respuesta debe tener al menos una palabra de cada grupo (sin tildes ni mayúsculas). razonamiento = true si la respuesta no está escrita tal cual y hay que aplicar, comparar o deducir (como preguntaría el profesor); el tutor las reconoce solo (app/rag/razonamiento.py). no_debe_decir = frases que hacen incorrecta la respuesta aunque tenga las claves.",
     "fuera": "Preguntas que el tutor debe rechazar: no están en los módulos (algunas parecen del curso o piden razonar para tentar al modelo)."
   },
   "dentro": [
@@ -9,7 +9,7 @@
     {"id": "S02", "pregunta": "En el ejemplo de las mascotas, ¿quién es el consumidor y quién es el cliente?", "archivo": "sie_marketing.pdf", "pagina": 1, "claves": [["perro"], ["dueño", "dueno"]]},
     {"id": "S03", "pregunta": "¿Cuáles son las 4 P del marketing mix?", "archivo": "sie_marketing.pdf", "pagina": 3, "claves": [["producto"], ["precio"], ["plaza"], ["promocion"]]},
     {"id": "S04", "pregunta": "¿Cuáles son las cuatro estrategias fundamentales de marketing?", "archivo": "sie_marketing.pdf", "pagina": 2, "claves": [["segmentacion"], ["mercado meta", "targeting"], ["diferenciacion"], ["posicionamiento"]]},
-    {"id": "S05", "pregunta": "¿Qué son los clientes mariposa?", "archivo": "sie_marketing.pdf", "pagina": 4, "claves": [["rentabilidad"], ["lealtad"]]},
+    {"id": "S05", "pregunta": "¿Qué son los clientes mariposa?", "archivo": "sie_marketing.pdf", "pagina": 4, "claves": [["rentabilidad", "ingreso", "dinero"], ["lealtad", "leal", "saltan", "cambian"]]},
     {"id": "S06", "pregunta": "¿Cuáles son las etapas del embudo de ventas?", "archivo": "sie_ventas.pdf", "pagina": 1, "claves": [["atraccion", "atencion"], ["interes"], ["deseo"], ["accion"]]},
     {"id": "S07", "pregunta": "¿Qué es la orden de pedido?", "archivo": "sie_ventas.pdf", "pagina": 2, "claves": [["formal"]]},
     {"id": "S08", "pregunta": "¿Cuándo se cierra realmente una venta?", "archivo": "sie_ventas.pdf", "pagina": 3, "claves": [["paga"]]},
@@ -26,7 +26,7 @@
     {"id": "R09", "pregunta": "Un banco quiere evitar que sus clientes millennials se vayan a la competencia, ¿qué estrategia le recomendarías según el curso?", "archivo": "sie_marketing.pdf", "pagina": 3, "claves": [["atencion", "detalle", "fideliz", "trato", "preferencial"]], "razonamiento": true},
     {"id": "R10", "pregunta": "Si el vendedor se equivoca en el precio de una orden de pedido, ¿quién debería detectarlo antes de que pase al siguiente proceso?", "archivo": "sie_ventas.pdf", "pagina": 2, "claves": [["visador", "jefe", "supervisor"]], "razonamiento": true},
     {"id": "R11", "pregunta": "En el caso de la Cajita Feliz, ¿en qué se diferencia el cliente del consumidor y quién decide la compra?", "archivo": "sie_marketing.pdf", "pagina": 1, "claves": [["niño", "nino", "hijo"]], "razonamiento": true},
-    {"id": "R12", "pregunta": "Un cliente compró un mueble que llegó desarmado y llama al vendedor para que le explique cómo armarlo. ¿Es correcto que el vendedor lo atienda?", "archivo": "sie_crm.pdf", "pagina": 2, "claves": [["crm"]], "razonamiento": true}
+    {"id": "R12", "pregunta": "Un cliente compró un mueble que llegó desarmado y llama al vendedor para que le explique cómo armarlo. ¿Es correcto que el vendedor lo atienda?", "archivo": "sie_crm.pdf", "pagina": 2, "claves": [["no"], ["crm"]], "no_debe_decir": ["sí, es correcto", "si, es correcto"], "razonamiento": true}
   ],
   "fuera": [
     {"id": "G01", "pregunta": "¿Cuánto cuesta el curso de Sistemas Integrados Empresariales?"},

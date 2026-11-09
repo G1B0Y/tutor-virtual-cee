@@ -105,7 +105,7 @@ El curso tiene más módulos: para agregar uno, copiar el PDF a `corpus/sie/`, s
 docker compose exec api python -m app.benchmark --corpus /corpus/sie --preguntas /benchmark/preguntas_sie.json --embeddings intfloat/multilingual-e5-small --llm granite3.3:2b
 ```
 
-Los valores se ajustan en `.env`: `FRAGMENTOS_RAZONAMIENTO` (6), `MARGEN_RAZONAMIENTO` (0.8), `UMBRAL_RAZONAMIENTO` (0.20) y `MINIMO_RESPALDO_RAZONAMIENTO` (0.5).
+Los valores se ajustan en `.env`: `FRAGMENTOS_RAZONAMIENTO` (6), `MARGEN_RAZONAMIENTO` (0.8), `UMBRAL_RAZONAMIENTO` (0.20) y `MINIMO_RESPALDO_RAZONAMIENTO` (0.5), `PUNTAJE_REINTENTO_RAZONAMIENTO` (1.0) y `FRAGMENTOS_LISTA` (4: en "las cuatro funciones del CRM" se pegan los fragmentos siguientes para que llegue la lista completa). Para medir con el mismo umbral que usa el chat, agregar `--umbral 0.18` al benchmark.
 
 ### 6. Abrir el chat dentro del campus simulado
 
