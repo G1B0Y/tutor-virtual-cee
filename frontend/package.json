@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "dev:red": "vite --host",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "build": "tsc --noEmit && vite build && vite build -c vite.embebido.config.ts",
+    "preview": "vite preview",
+    "build:embebido": "vite build -c vite.embebido.config.ts",
+    "compartir": "vite build --mode compartir --outDir dist-compartir && vite preview --mode compartir --outDir dist-compartir"
   },
   "dependencies": {
     "react": "19.3.1",

@@ -1,10 +1,12 @@
 """Genera los PDFs de prueba del corpus (contenido ficticio, marcado como PRUEBA).
 
-Uso (desde la raíz del repo):  python scripts/generar_corpus_prueba.py
+Uso (desde la raíz del repo):  python scripts/generar_corpus_prueba.py [--todos]
+Solo genera los PDF que faltan; con --todos rehace también los que ya existen.
 Necesita reportlab (solo para generar; el tutor no lo usa):  pip install reportlab
 Los PDFs quedan en corpus/prueba/. El texto de cada página está en PAGINAS para poder revisarlo.
 """
 
+import sys
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
@@ -87,14 +89,56 @@ DOCUMENTOS = {
             ],
         ],
     ),
+    "temario_gestion_proyectos_pmbok.pdf": (
+        "Temario – Curso de Gestión de Proyectos con el PMBOK",
+        [
+            [
+                ("h", "Datos generales"),
+                ("p", "El curso de Gestión de Proyectos con el PMBOK tiene una duración de 48 horas académicas en modalidad virtual en vivo, con clases los lunes y miércoles de 7:00 p. m. a 10:00 p. m. (hora de Lima). Prepara al participante para rendir el examen de certificación CAPM del PMI; el costo del examen no está incluido."),
+                ("p", "Está dirigido a profesionales que participan en proyectos y quieren planificarlos y controlarlos con buenas prácticas reconocidas internacionalmente."),
+                ("h", "Unidades"),
+                ("p", "Unidad 1 – Alcance: acta de constitución, requisitos y estructura de desglose del trabajo (EDT o WBS). Unidad 2 – Cronograma: secuencia de actividades, método de la ruta crítica (CPM) y diagrama de Gantt. Unidad 3 – Costos: presupuesto y gestión del valor ganado (EVM). Unidad 4 – Riesgos e interesados: matriz de probabilidad e impacto, plan de respuesta y registro de interesados."),
+            ],
+            [
+                ("h", "Gestión del valor ganado"),
+                ("p", "El valor ganado compara lo planificado con lo realizado. El índice de desempeño del costo es CPI = EV / AC y el índice de desempeño del cronograma es SPI = EV / PV, donde EV es el valor ganado, AC el costo real y PV el valor planificado. Un CPI menor que 1 indica que el proyecto gasta más de lo presupuestado; un SPI menor que 1 indica que va atrasado."),
+                ("p", "Ejemplo: si EV = S/ 40 000 y AC = S/ 50 000, el CPI es 0,8: por cada sol gastado se obtiene 80 céntimos de trabajo."),
+                ("h", "Evaluación"),
+                ("p", "La nota final se calcula con dos prácticas calificadas (30 %), un caso aplicativo grupal (30 %) y un examen final (40 %)."),
+            ],
+        ],
+    ),
+    "separata_lean_herramientas_estadisticas.pdf": (
+        "Separata de la Unidad 3 – Herramientas estadísticas para Lean Six Sigma",
+        [
+            [
+                ("h", "1. Capacidad de proceso"),
+                ("p", "La capacidad de proceso indica si un proceso cumple las especificaciones del cliente. El índice Cp = (LSE − LIE) / (6σ) compara el ancho de la especificación con la variación natural del proceso, donde LSE y LIE son los límites superior e inferior de especificación y σ es la desviación estándar del proceso."),
+                ("p", "El índice Cpk = mín((LSE − μ) / (3σ), (μ − LIE) / (3σ)) además considera si el proceso está centrado, donde μ es la media del proceso. Un proceso se considera capaz cuando su Cpk es mayor o igual a 1,33. Si Cp es alto pero Cpk es bajo, el proceso tiene poca variación pero está descentrado."),
+            ],
+            [
+                ("h", "2. Diagrama de Pareto"),
+                ("p", "El diagrama de Pareto ordena las causas de un problema de mayor a menor frecuencia, con una línea del porcentaje acumulado. Ayuda a concentrar el esfuerzo en las pocas causas vitales que suelen explicar cerca del 80 % de los defectos."),
+                ("h", "3. Diagrama de Ishikawa"),
+                ("p", "El diagrama de Ishikawa, o de causa y efecto, organiza las posibles causas de un problema en seis categorías conocidas como las 6M: método, mano de obra, máquina, material, medición y medio ambiente."),
+                ("h", "4. Gráficos de control"),
+                ("p", "Un gráfico de control muestra la evolución de un proceso en el tiempo con una línea central y límites de control a ±3σ de la media. Un punto fuera de los límites indica una causa especial de variación que se debe investigar; si todos los puntos están dentro y sin patrones, el proceso está bajo control estadístico."),
+            ],
+        ],
+    ),
 }
 
 
-def generar() -> None:
+def generar(todos: bool = False) -> None:
+    """Genera los PDFs que faltan. Con todos=True también rehace los que existen
+    (cambia su hash y la ingesta los cargará como versión nueva)."""
     DESTINO.mkdir(parents=True, exist_ok=True)
     estilos = getSampleStyleSheet()
     aviso = ParagraphStyle("aviso", parent=estilos["Normal"], fontSize=8, textColor="#870c0e")
     for archivo, (titulo, paginas) in DOCUMENTOS.items():
+        if (DESTINO / archivo).exists() and not todos:
+            print("Ya existe (no se toca):", archivo)
+            continue
         doc = SimpleDocTemplate(str(DESTINO / archivo), pagesize=A4, title=titulo, author="CEE FIIS-UNI (PRUEBA)",
                                 leftMargin=2 * cm, rightMargin=2 * cm, topMargin=2 * cm, bottomMargin=2 * cm)
         historia = []
@@ -111,4 +155,4 @@ def generar() -> None:
 
 
 if __name__ == "__main__":
-    generar()
+    generar(todos="--todos" in sys.argv)

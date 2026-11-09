@@ -1,5 +1,7 @@
 import math
 
+import pytest
+
 from app.consulta import Turno
 from app.rag.busqueda import FragmentoEncontrado
 from app.rag.embeddings import DIMENSION, EmbeddingsHash
@@ -73,6 +75,16 @@ def test_pdf_se_versionan_como_binarios():
     assert "*.pdf binary" in [r.strip() for r in reglas]
 
 
+def test_limpiar_respuesta_quita_negritas_y_titulos_de_markdown():
+    """granite3.3:2b respondió DMAIC con "**Definir**" (07/11/2026) y el chat lo mostraba con los asteriscos."""
+    from app.rag.prompt import limpiar_respuesta
+
+    texto = "## DMAIC\nLas siglas significan:\n- **Definir**: el problema.\n- __Medir__: datos.\nCpk ≥ 1,33 × 2"
+    assert limpiar_respuesta(texto) == (
+        "DMAIC\nLas siglas significan:\n- Definir: el problema.\n- Medir: datos.\nCpk ≥ 1,33 × 2"
+    )
+
+
 def test_limpiar_respuesta_quita_latex():
     """qwen2.5:1.5b escribió la fórmula del EOQ en LaTeX y el chat la mostraba cruda (01/11/2026)."""
     from app.rag.prompt import limpiar_respuesta
@@ -96,17 +108,60 @@ def test_prompt_pide_no_agregar_nada_ni_usar_latex():
     assert "sin LaTeX" in INSTRUCCIONES
 
 
-def test_seleccionar_cita_solo_los_fragmentos_cercanos_al_mejor():
-    """Para "¿cuántas horas dura el programa?" se citaban 4 fuentes cuando bastaba una (01/11/2026)."""
+def test_seleccionar_cita_solo_los_fragmentos_con_puntaje_cercano_al_mejor():
+    """Para "¿cuántas horas dura el programa?" se citaban 4 fuentes cuando bastaba una (01/11/2026).
+    Desde el 08/11/2026 el margen es sobre el puntaje de la búsqueda híbrida, y el umbral sigue siendo de distancia."""
     from app.consulta import seleccionar
 
-    def frag(titulo, distancia):
-        return FragmentoEncontrado(titulo=titulo, pagina=1, texto="x", distancia=distancia)
+    def frag(titulo, distancia, puntaje):
+        return FragmentoEncontrado(titulo=titulo, pagina=1, texto="x", distancia=distancia, puntaje=puntaje)
 
-    encontrados = [frag("Temario", 0.20), frag("Temario p2", 0.27), frag("Reglamento", 0.45), frag("Lejano", 0.70)]
-    elegidos = seleccionar(encontrados, umbral=0.55, margen=0.10)
+    encontrados = [frag("Temario", 0.20, 1.6), frag("Temario p2", 0.27, 1.3), frag("Reglamento", 0.45, 0.6),
+                   frag("Lejano con las palabras", 0.70, 1.9)]
+    elegidos = seleccionar(encontrados, umbral=0.55, margen=0.4)
     assert [f.titulo for f in elegidos] == ["Temario", "Temario p2"]
-    assert seleccionar([frag("Lejano", 0.70)], umbral=0.55, margen=0.10) == []
+    assert seleccionar([frag("Lejano", 0.70, 2.0)], umbral=0.55, margen=0.4) == []
+
+
+def test_terminos_conservan_las_siglas_y_quitan_las_palabras_de_pregunta():
+    from app.rag.busqueda import terminos
+
+    assert terminos("¿Qué indica un CPI menor que 1?") == ["indica", "cpi", "menor"]
+    assert terminos("¿Cómo se calcula el OEE?") == ["oee"]
+    assert terminos("matriz de poder e INTERÉS") == ["matriz", "poder", "intere"]
+    assert "cp" not in terminos("El Cp de un proceso")  # así CPI no se confunde con Cp
+    assert terminos("¿Qué son las 5S?") == ["5s"]  # antes quedaba vacío y la búsqueda por palabras no ayudaba
+
+
+def test_siglas_del_material_y_titulo_en_cada_fragmento():
+    from app.rag.busqueda import IndiceLexico, terminos
+
+    filas = [(1, "Gestión de Proyectos con el PMBOK – Unidad 1", "La octava edición tiene 6 principios."),
+             (2, "Lean Six Sigma – Unidad 3", "Si el Cp es menor que 1, el proceso no es capaz. Validado por el CEE."),
+             (3, "Gestión de Proyectos con el PMBOK – Unidad 3", "CPI = EV / AC. Validado por el CEE."),
+             (4, "Cadena de Suministro – Módulo 4", "Validado por el CEE.")]
+    indice = IndiceLexico(filas)
+    assert indice.puntajes(terminos("principios del PMBOK"))[1] == 1.0  # "PMBOK" está en el título
+    assert indice.siglas_de(terminos("¿Qué indica un CPI?")) == {"cpi"}
+    assert "cee" not in indice.siglas  # está en casi todos: no sirve para distinguir
+
+
+def test_indice_lexico_pesa_mas_las_palabras_raras():
+    """"¿Qué indica un CPI menor que 1?" traía el Cp (capacidad de procesos), que también dice "menor que 1",
+    y el modelo respondió mal (08/11/2026). "cpi" está en un solo fragmento y pesa más que "menor"."""
+    from app.rag.busqueda import IndiceLexico, terminos
+
+    indice = IndiceLexico([
+        (1, "Lean U3", "Si el Cp es menor que 1, el proceso no es capaz. Un valor menor indica variación."),
+        (2, "PMBOK U3", "CPI = EV / AC. Menor que 1 = se gasta más de lo presupuestado."),
+        (3, "Cadena M2", "Un error menor que el anterior indica mejora."),
+        (4, "Cadena M4", "La rotación de inventario indica cuántas veces se vende."),
+    ])
+    puntajes = indice.puntajes(terminos("¿Qué indica un CPI menor que 1?"))
+    assert max(puntajes, key=puntajes.get) == 2
+    assert puntajes[2] > 0.7 > puntajes[1]
+    assert set(indice.puntajes(terminos("¿Qué indica un CPI?"), titulo="Lean U3")) == {1}  # solo ese documento
+    assert indice.puntajes(terminos("¿Quién ganó el mundial?")) == {}
 
 
 def test_precargar_pide_el_modelo_a_ollama_y_no_falla_si_esta_caido(monkeypatch):
@@ -167,3 +222,58 @@ def test_los_mensajes_informativos_de_la_api_se_ven_en_el_log():
 
     assert registro.isEnabledFor(logging.INFO)
     assert registro.handlers
+
+
+def test_prompt_pide_no_explicar_temas_que_el_documento_solo_enumera():
+    """granite explicó la unidad 1 de PMBOK con conocimiento propio: el temario solo lista los temas (08/11/2026)."""
+    from app.rag.prompt import INSTRUCCIONES, armar_mensajes
+
+    assert "solo enumeran los temas" in INSTRUCCIONES and "separata" in INSTRUCCIONES
+    sin_anterior = armar_mensajes("¿Qué es el EOQ?", [])[1]["content"]
+    assert "<pregunta_anterior>" not in sin_anterior
+
+
+def test_texto_para_buscar_pasa_a_minusculas_lo_escrito_en_mayusculas():
+    """"ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO" no pasaba el umbral con e5-small (08/11/2026)."""
+    from app.consulta import texto_para_buscar
+
+    assert texto_para_buscar("ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN") == "estoy llevando ese curso, dame un resumen"
+    assert texto_para_buscar("¿Qué temas tiene el curso de PMBOK?") == "¿Qué temas tiene el curso de PMBOK?"
+    assert texto_para_buscar("¿Qué es EOQ?") == "¿Qué es EOQ?"  # pocas letras: siglas, se dejan
+
+
+def test_texto_para_buscar_lleva_tema_uno_a_unidad_1():
+    """El temario dice "Unidad 1"; con "tema uno" el modelo tomó las unidades 3 y 4 (08/11/2026)."""
+    from app.consulta import texto_para_buscar
+
+    assert texto_para_buscar("DAME UN RESUMEN DEL TEMA UNO") == "dame un resumen del unidad 1"
+    assert texto_para_buscar("explícame el primer tema") == "explícame el unidad 1"
+    assert texto_para_buscar("¿qué ve el módulo dos?") == "¿qué ve el módulo 2?"
+    assert texto_para_buscar("¿Qué temas se ven en el módulo de pronóstico?") == "¿Qué temas se ven en el módulo de pronóstico?"
+
+
+@pytest.mark.parametrize("pregunta,esperado", [
+    ("ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO", True),
+    ("¿y el tema dos?", True), ("explícame eso", True), ("¿qué evalúa este curso?", True),
+    ("¿Cómo se calcula el inventario de seguridad?", False), ("¿Qué está incluido en el temario de Lean?", False),
+])
+def test_es_seguimiento(pregunta, esperado):
+    from app.consulta import es_seguimiento
+
+    assert es_seguimiento(pregunta) is esperado
+
+
+def test_ordinales_en_numero_y_en_palabras_son_el_mismo_termino():
+    """La pregunta decía "PMBOK 8.ª edición" y el documento "Octava edición" (08/11/2026)."""
+    from app.rag.busqueda import terminos
+    assert "ord8" in terminos("principios del PMBOK 8.ª edición")
+    assert "ord8" in terminos("Octava edición (noviembre de 2025)")
+    assert "ord7" in terminos("la 7a edición") and "ord7" in terminos("séptima edición")
+    assert terminos("de 5 a 10 horas") == ["horas"]  # "5 a" no es "quinta"
+    assert terminos("las 5S") == ["5s"]
+
+
+def test_unir_fragmentos_sin_repetir_el_solape():
+    from app.consulta import _unir
+    assert _unir("Uno dice algo. Octava edición:", "Octava edición: reduce a 6.") == "Uno dice algo. Octava edición: reduce a 6."
+    assert _unir("Primero.", "Segundo.") == "Primero. Segundo."

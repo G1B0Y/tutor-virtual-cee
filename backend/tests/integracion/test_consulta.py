@@ -4,6 +4,7 @@ Usa embeddings "hash" (sin descargar modelos) y un LLM falso: prueban la tuberí
 La calidad real se mide en el benchmark (Fase 2) con el modelo de embeddings y Ollama.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -21,13 +22,17 @@ CONFIG = Configuracion(embeddings_proveedor="hash", umbral_distancia=0.9, umbral
 class LLMFalso:
     nombre = "falso"
 
-    def __init__(self, texto="Respuesta redactada.", falla=False):
+    """Sin `texto`, responde copiando los documentos que recibió (así pasa el control de respaldo)."""
+
+    def __init__(self, texto=None, falla=False):
         self.texto, self.falla, self.recibido = texto, falla, None
 
     def generar(self, mensajes):
         self.recibido = mensajes
         if self.falla:
             raise ErrorLLM("Ollama apagado")
+        if self.texto is None:
+            return mensajes[-1]["content"].split("<documentos>")[1].split("</documentos>")[0].strip()
         return self.texto
 
 
@@ -37,16 +42,21 @@ def con_corpus(db):
     return db
 
 
+def _documentos_del_corpus() -> int:
+    return len(json.loads((CORPUS / "corpus.json").read_text(encoding="utf-8"))["documentos"])
+
+
 def test_el_corpus_de_prueba_se_carga_completo(con_corpus):
     resumen = estado(con_corpus)
-    assert resumen[0] == "Documentos vigentes: 4"
+    assert _documentos_del_corpus() == 6
+    assert resumen[0] == f"Documentos vigentes: {_documentos_del_corpus()}"
     assert resumen[-1] == "FAQs activas: 5"
 
 
 def test_volver_a_cargar_el_mismo_corpus_no_duplica(con_corpus):
     mensajes = cargar_corpus(con_corpus, EmbeddingsHash(), CORPUS)
     assert all("sin cambios" in m for m in mensajes[:-1])
-    assert estado(con_corpus)[0] == "Documentos vigentes: 4"
+    assert estado(con_corpus)[0] == f"Documentos vigentes: {_documentos_del_corpus()}"
 
 
 def test_pdf_sin_texto_se_rechaza(db, tmp_path):
@@ -64,7 +74,7 @@ def test_pregunta_con_evidencia_pasa_por_el_llm_y_cita_fuentes(con_corpus):
     llm = LLMFalso()
     r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG)
     assert r.estado == RESPONDIDA
-    assert r.respuesta == "Respuesta redactada."
+    assert r.respuesta.startswith("[1] ")
     assert any("Gestión de Inventarios" in f.titulo for f in r.fuentes)
     assert "inventario de seguridad" in llm.recibido[1]["content"].lower()
 
@@ -112,3 +122,144 @@ def test_cada_consulta_deja_un_evento_sin_la_pregunta(con_corpus):
     responder("¿Cuál es la nota mínima para aprobar?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), CONFIG)
     fila = con_corpus.execute("SELECT tipo, estado FROM eventos WHERE tipo = 'consulta' ORDER BY id DESC").fetchone()
     assert fila == ("consulta", "faq")
+
+
+def test_saludo_responde_sin_buscar_ni_dejar_pendiente(con_corpus):
+    """"¿en qué me puedes ayudar?" se abstenía y quedaba como consulta pendiente para el CEE (07/11/2026)."""
+    from app.consulta import ORIENTACION
+
+    class EmbeddingsQueNoSeUsan(EmbeddingsHash):
+        def codificar(self, textos, es_consulta=False):
+            raise AssertionError("no debía buscar")
+
+    pendientes = con_corpus.execute("SELECT count(*) FROM consultas_pendientes").fetchone()[0]
+    llm = LLMFalso()
+    r = responder("en que me puedes ayudar?", con_corpus, EmbeddingsQueNoSeUsan(), llm, Turno(3), CONFIG)
+    assert r.estado == ORIENTACION
+    assert "temarios" in r.respuesta and r.fuentes == []
+    assert llm.recibido is None
+    assert con_corpus.execute("SELECT count(*) FROM consultas_pendientes").fetchone()[0] == pendientes
+    assert con_corpus.execute(
+        "SELECT estado FROM eventos WHERE tipo = 'consulta' ORDER BY id DESC LIMIT 1").fetchone()[0] == ORIENTACION
+
+
+SEGUIMIENTO = "ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO"
+ANTERIOR = "¿Qué temas tiene el curso de Gestión de Proyectos con el PMBOK?"
+
+
+def test_seguimiento_usa_la_pregunta_anterior_para_entender_ese_curso(con_corpus):
+    """Alfredo preguntó por el temario de PMBOK y luego "ese curso … tema uno": se abstenía (08/11/2026)."""
+    config = CONFIG.model_copy(update={"umbral_distancia": 0.65})
+    sola = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), config)
+    assert sola.estado == SIN_EVIDENCIA
+
+    llm = LLMFalso()
+    r = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), llm, Turno(3), config, anterior=ANTERIOR)
+    assert r.estado == RESPONDIDA
+    assert r.fuentes and all("PMBOK" in f.titulo for f in r.fuentes)  # solo el curso de la pregunta anterior
+    usuario = llm.recibido[-1]["content"]
+    assert f"<pregunta_anterior>\n{ANTERIOR}\n</pregunta_anterior>" in usuario
+    assert f"<pregunta_del_alumno>\n{SEGUIMIENTO}\n</pregunta_del_alumno>" in usuario
+
+
+def test_la_pregunta_anterior_no_se_usa_si_la_actual_se_entiende_sola(con_corpus):
+    llm = LLMFalso()
+    r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG,
+                  anterior=ANTERIOR)
+    assert r.estado == RESPONDIDA
+    assert "<pregunta_anterior>" not in llm.recibido[-1]["content"]
+
+
+def test_la_pregunta_anterior_no_se_guarda_en_pendientes(con_corpus):
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    responder("¿Y el tema dos?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), estricta,
+              anterior="dato personal de prueba 12345")
+    guardadas = [p for (p,) in con_corpus.execute("SELECT pregunta FROM consultas_pendientes").fetchall()]
+    assert "¿Y el tema dos?" in guardadas
+    assert not any("12345" in p for p in guardadas)
+
+
+PMBOK = "Temario – Gestión de Proyectos con el PMBOK (PRUEBA)"
+
+
+def test_seguimiento_se_detecta_aunque_la_pregunta_sola_encuentre_algo(con_corpus):
+    """Con "tema uno" → "unidad 1" la pregunta sola pasaba el umbral y mezclaba 4 documentos (08/11/2026)."""
+    llm = LLMFalso()
+    r = responder(SEGUIMIENTO, con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG, anterior=ANTERIOR)
+    assert r.estado == RESPONDIDA
+    assert {f.titulo for f in r.fuentes} == {PMBOK}
+    assert "Unidad 1" in llm.recibido[-1]["content"]
+
+
+def test_seguimiento_encadenado_usa_el_documento_de_la_respuesta_anterior(con_corpus):
+    """"¿y el tema dos?" después de "ese curso…": la pregunta anterior tampoco nombra el curso."""
+    llm = LLMFalso()
+    r = responder("¿y el tema dos?", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG,
+                  anterior=SEGUIMIENTO, documento_anterior=PMBOK)
+    assert r.estado == RESPONDIDA
+    assert {f.titulo for f in r.fuentes} == {PMBOK}
+    assert "Unidad 2" in llm.recibido[-1]["content"]
+
+
+def test_documento_anterior_que_no_existe_no_rompe_la_busqueda(con_corpus):
+    r = responder("¿Cómo se calcula el inventario de seguridad?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3),
+                  CONFIG, documento_anterior="Reglamento Académico (FAQ)")
+    assert r.estado == RESPONDIDA
+
+
+def test_pregunta_de_una_sigla_encuentra_el_documento_que_la_define(con_corpus):
+    """"que es un VSM?" no llegaba al temario de Lean, que dice "mapa de flujo de valor (VSM)" (08/11/2026)."""
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    llm = LLMFalso()
+    r = responder("que es un vsm?", con_corpus, EmbeddingsHash(), llm, Turno(3), estricta)
+    assert r.estado == RESPONDIDA
+    assert [f.titulo for f in r.fuentes] == ["Temario – Lean Six Sigma Green Belt (PRUEBA)"]
+    assert "(VSM)" in llm.recibido[-1]["content"]
+
+
+def test_sin_sigla_ni_evidencia_se_sigue_absteniendo(con_corpus):
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    r = responder("¿Quién ganó el mundial?", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), estricta)
+    assert r.estado == SIN_EVIDENCIA
+
+
+def test_si_el_modelo_se_abstiene_dice_que_material_reviso(con_corpus):
+    """"¿cuáles son los 8 desperdicios?": el temario los nombra pero no los lista. El alumno ve dónde se buscó."""
+    r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso("SIN_EVIDENCIA"),
+                  Turno(3), CONFIG)
+    assert r.estado == SIN_EVIDENCIA
+    assert r.respuesta.startswith("No encontré la respuesta en los materiales del CEE (lo más cercano que revisé: ")
+    assert r.fuentes == []
+
+
+def test_respuesta_inventada_se_descarta_aunque_el_modelo_no_se_abstenga(con_corpus):
+    """granite listó "los 8 desperdicios" de memoria; el temario solo los nombra (08/11/2026)."""
+    from tests.test_respaldo import INVENTADA
+
+    r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA),
+                  Turno(3), CONFIG)
+    assert r.estado == SIN_EVIDENCIA
+    assert "desperdicios son" not in r.respuesta
+    assert con_corpus.execute(
+        "SELECT count(*) FROM consultas_pendientes WHERE pregunta = '¿Cuáles son los 8 desperdicios de Lean?'"
+    ).fetchone()[0] == 1
+
+
+def test_lista_inventada_con_palabras_del_tema_tambien_se_descarta(con_corpus):
+    from tests.test_respaldo import INVENTADA_2
+
+    r = responder("¿Cuáles son los 8 desperdicios de Lean?", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA_2),
+                  Turno(3), CONFIG)
+    assert r.estado == SIN_EVIDENCIA
+
+
+def test_lista_inventada_en_seguimiento_se_descarta(con_corpus):
+    """Caso del chat de Alfredo (08/11/2026): tras preguntar por el primer tema de Six Sigma, "cuales son los 8
+    desperdicios" encontraba también Cadena de Suministro e Inventarios y granite armaba la lista con sus palabras."""
+    from tests.test_respaldo import INVENTADA_3
+
+    r = responder("cuales son los 8 desperdicios", con_corpus, EmbeddingsHash(), LLMFalso(INVENTADA_3), Turno(3),
+                  CONFIG, anterior="cual es el primer tema de sixsigma",
+                  documento_anterior="Temario – Lean Six Sigma Green Belt (PRUEBA)")
+    assert r.estado == SIN_EVIDENCIA
+    assert "Sobreproducción" not in r.respuesta

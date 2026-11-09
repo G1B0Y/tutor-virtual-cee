@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { consultar, consultarSalud, LARGO_MAXIMO_PREGUNTA, type EstadoRespuesta, type Fuente } from "./api";
+import {
+  consultar,
+  consultarSalud,
+  LARGO_MAXIMO_PREGUNTA,
+  LimiteDePreguntas,
+  type EstadoRespuesta,
+  type Fuente,
+} from "./api";
+import simbolo from "./marca/cee-simbolo.png";
 
 type Conexion = "revisando" | "disponible" | "degradado" | "sin-conexion";
 
@@ -58,16 +66,24 @@ export function Widget() {
     e.preventDefault();
     const texto = pregunta.trim();
     if (texto.length < 2 || pensando) return;
+    const anterior = [...mensajes].reverse().find((m) => m.de === "alumno")?.texto;
+    // El documento de la última respuesta con fuente (aunque después haya un "no encontré"): "ese curso".
+    const ultimaRespondida = [...mensajes].reverse().find((m) => m.de === "bot" && m.estado === "respondida");
+    const documento = ultimaRespondida?.de === "bot" ? ultimaRespondida.fuentes?.[0]?.titulo : undefined;
     agregar({ de: "alumno", texto });
     setPregunta("");
     setPensando(true);
     try {
-      const r = await consultar(texto);
+      const r = await consultar(texto, anterior, documento);
       agregar({ de: "bot", texto: r.respuesta, estado: r.estado, fuentes: r.fuentes });
       setConexion("disponible");
-    } catch {
-      agregar({ de: "bot", estado: "error", texto: "No pude conectarme con el tutor. Intenta de nuevo en unos minutos." });
-      setConexion("sin-conexion");
+    } catch (error) {
+      if (error instanceof LimiteDePreguntas) {
+        agregar({ de: "bot", estado: "ocupado", texto: error.message });
+      } else {
+        agregar({ de: "bot", estado: "error", texto: "No pude conectarme con el tutor. Intenta de nuevo en unos minutos." });
+        setConexion("sin-conexion");
+      }
     } finally {
       setPensando(false);
     }
@@ -80,7 +96,7 @@ export function Widget() {
       {abierto && (
         <section className="tutor-panel" role="dialog" aria-label="Tutor Virtual del CEE">
           <header className="tutor-cabecera">
-            <img className="tutor-avatar" src="/marca/cee-simbolo.png" alt="" />
+            <img className="tutor-avatar" src={simbolo} alt="" />
             <div className="tutor-titulo">
               <strong>Tutor Virtual CEE</strong>
               <span className={`tutor-estado tutor-estado--${conexion}`}>{TEXTO_CONEXION[conexion]}</span>
@@ -135,7 +151,7 @@ export function Widget() {
         aria-expanded={abierto}
         aria-label={abierto ? "Cerrar el tutor virtual" : "Abrir el tutor virtual"}
       >
-        {abierto ? "×" : <img src="/marca/cee-simbolo.png" alt="" />}
+        {abierto ? "×" : <img src={simbolo} alt="" />}
       </button>
     </div>
   );

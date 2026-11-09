@@ -46,7 +46,8 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Reemplazar un documento retira del índice la versión anterior (`registrar_version` + vista `fragmentos_vigentes`).
 - [x] Carga de FAQs desde un CSV (pregunta, respuesta, fuente). Excel queda para después si el CEE lo prefiere.
 - [x] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
-- [x] Corpus de prueba mientras el CEE entrega el real: 4 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11). Falta llegar a 5+ PDF y probar el reemplazo con un archivo real.
+- [x] Corpus de prueba mientras el CEE entrega el real: 6 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11; 6 PDF desde el 04/11). Falta probar el reemplazo con un archivo real.
+- [x] Material complementario de los 3 cursos (08/11, pedido de Alfredo): 12 separatas en `corpus/complementario/` redactadas con fuentes públicas y marcadas "MATERIAL DE PRUEBA" en cada página; comando `retirar` para sacarlas cuando llegue el material del CEE. Falta probar las respuestas en la PC de Alfredo.
 
 **Listo cuando:** se cargan 5+ PDFs y un CSV de FAQs, se reemplaza uno y la base solo deja vigente la versión nueva.
 
@@ -57,9 +58,15 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
 - [x] Respuesta con fuente: nombre del documento y página.
 - [x] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (01/11: 7 preguntas; ver bitácora). Falta repetir con los arreglos del prompt.
-- [ ] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus, 10 fuera de alcance (trámites, matrícula, temas ajenos).
-- [ ] Benchmark reproducible: **≥2 modelos de embeddings** y **≥2 LLM**; medir recall@5, aciertos con fuente, rechazos correctos, tiempo al primer token, tiempo total y RAM.
-- [ ] Elegir modelos y fijar sus versiones; verificar licencias en la ficha oficial (RNF-23).
+- [x] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus (3 de ellas para FAQ), 10 fuera de alcance (trámites, matrícula, temas ajenos, prompt injection) en `benchmark/preguntas.json` (04/11). Se rehace con el corpus real.
+- [x] Script del benchmark reproducible (`python -m app.benchmark`, 04/11): **2 modelos de embeddings** (MiniLM-L12 multilingüe, multilingual-e5-small) y **2 LLM** (qwen2.5:1.5b, granite3.3:2b); mide recall@1/@5, aciertos con fuente, rechazos correctos (por búsqueda y por modelo), tiempo al primer token, tiempo total (promedio y p95) y RAM; propone los umbrales de documentos y FAQs. Informe en `benchmark/resultados/`.
+- [x] Correr el benchmark completo en la PC de Alfredo (07/11: informe `2026-11-07_1822`). Informe en `benchmark/resultados/`.
+- [x] Elegir modelos (07/11, decisión de Alfredo): **e5-small + granite3.3:2b** (19/20 aciertos con fuente, 10/10 rechazos, 10,6 s promedio). Umbrales 0.18 / 0.10 en `.env.example` y por defecto; comando `python -m app.ingesta reindexar` para recalcular los vectores al cambiar de embeddings.
+- [x] Control de respaldo sin el modelo (08/11): se quitan las frases y los elementos de lista que no están en los documentos; si la lista es inventada o queda poco, se abstiene (`app/rag/respaldo.py`).
+- [x] Probar el control de respaldo en la PC de Alfredo y repetir el benchmark del par elegido (08/11: 19/20, 10/10, 4,6 s).
+- [x] Búsqueda híbrida (significado + palabras de la pregunta con IDF) y comando `python -m app.diagnostico` (08/11), por los fallos con el corpus complementario (CPI/Cp, project charter, OEE, PERT). Falta calibrar `PESO_LEXICO` y `MARGEN_PUNTAJE` en la PC de Alfredo.
+- [x] Segundo intento con evidencia fuerte, fragmento siguiente pegado al mejor, ordinales ("8.ª" = "octava") y abstención con listas a medias (08/11; 8ebc978 en su PC: 20/20, 10/10, 5,1 s). Falta repetir las 21 preguntas con el último ajuste.
+- [ ] Verificar las licencias en la ficha oficial (RNF-23): e5-small (MIT) y granite3.3:2b (Apache 2.0).
 
 **Listo cuando:** recall@5 ≥ 80 % y hay un informe con los modelos elegidos y por qué.
 
@@ -67,9 +74,9 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 - [x] `POST /consulta` → respuesta, fuentes y estado (`respondida`, `faq`, `sin_evidencia`, `sin_llm`, `ocupado`). Falta el id de conversación y el token de sesión.
 - [x] `GET /salud` (API, base y Ollama; avisa si falta descargar el modelo).
-- [ ] `POST /consultas-pendientes` para dejar una consulta a atención diferida (mínimos datos) y listado para el CEE (protegido).
+- [x] Consultas pendientes: se guardan solas al abstenerse; listado para el CEE (`GET /consultas-pendientes`, protegido con `X-Clave-CEE`) y marcar atendida (08/11). Falta, si se pide, que el alumno deje un contacto.
 - [x] Cola con **una generación activa**, cola de 3, timeout y aviso de "sistema ocupado".
-- [ ] Límite de solicitudes por usuario y por minuto.
+- [x] Límite de solicitudes por usuario y por minuto (08/11: 8 por defecto, HTTP 429; por IP hasta que el Campus pase un id del alumno).
 - [x] FAQs sin LLM cuando la pregunta coincide con una FAQ; con Ollama caído, el fragmento más cercano con su fuente.
 - [x] Registro de tiempos y estado de cada consulta en `eventos`, sin el texto de la pregunta. Falta el registro de errores.
 - [x] Validación de entradas (2 a 500 caracteres) con Pydantic; pruebas con pytest.
@@ -78,10 +85,10 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 4 – Chat (08–12/11) · RF-M01, RNF-13, RNF-24 a 26
 
-- [x] Widget de chat en React + TypeScript + Vite (botón flotante que abre el panel). Falta empaquetarlo para embeberlo en otra página.
+- [x] Widget de chat en React + TypeScript + Vite (botón flotante que abre el panel). Empaquetado como `tutor-cee.js` con Shadow DOM (08/11).
 - [x] Mensajes con fuentes, estado "no encontré información" con el canal humano, "sistema ocupado" y error claro si el bot no responde.
 - [x] Aviso visible: "asistente automatizado, puede equivocarse".
-- [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible.
+- [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible. 08/11: 360 px sin desborde y con `100dvh` (Playwright); falta un celular real y revisar teclado/contraste.
 - [ ] **Campus simulado:** página HTML que embebe el widget y le pasa un token de sesión de prueba, hasta que el Grupo 3 defina la integración real.
 - [x] Si la API cae, el campus simulado sigue funcionando (RNF-03).
 

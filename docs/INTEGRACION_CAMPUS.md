@@ -35,10 +35,12 @@ Motivos:
 2. El Grupo 3 lo agrega en **Administración del sitio → Apariencia → HTML adicional → "Antes de cerrar BODY"**:
 
    ```html
-   <script src="https://<servidor-del-tutor>/widget/tutor-cee.js" defer></script>
+   <script src="https://<servidor-del-tutor>/widget/tutor-cee.js" data-api="https://<servidor-del-tutor>/api" defer></script>
    ```
 
-3. La API del tutor solo acepta llamadas desde la dirección del campus (CORS).
+3. La API del tutor solo acepta llamadas desde la dirección del campus (CORS: `ORIGENES_PERMITIDOS` en el `.env` del tutor).
+
+El chat se monta en su propio contenedor con Shadow DOM: el tema `theme_cee` no le cambia los estilos y el chat no cambia los del campus. Probado con una página de estilos agresivos (`frontend/ejemplo-moodle.html`) en 360 px y en PC (08/11/2026).
 
 Resultado: el botón aparece en todas las páginas del campus, en PC y celular. Como el campus exige iniciar sesión para ver cualquier página (RNF-05 del Grupo 3), solo lo ven los usuarios del campus.
 

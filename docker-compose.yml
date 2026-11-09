@@ -50,12 +50,23 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tutor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tutor}
       OLLAMA_URL: http://ollama:11434
       ORIGENES_PERMITIDOS: ${ORIGENES_PERMITIDOS:-["http://localhost:5173"]}
-      LLM_MODELO: ${LLM_MODELO:-qwen2.5:1.5b}
-      EMBEDDINGS_MODELO: ${EMBEDDINGS_MODELO:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+      LLM_MODELO: ${LLM_MODELO:-granite3.3:2b}
+      EMBEDDINGS_MODELO: ${EMBEDDINGS_MODELO:-intfloat/multilingual-e5-small}
+      UMBRAL_DISTANCIA: ${UMBRAL_DISTANCIA:-0.18}
+      UMBRAL_FAQ: ${UMBRAL_FAQ:-0.10}
+      PESO_LEXICO: ${PESO_LEXICO:-1.0}
+      MARGEN_PUNTAJE: ${MARGEN_PUNTAJE:-0.4}
+      PUNTAJE_REINTENTO: ${PUNTAJE_REINTENTO:-1.6}
+      MINIMO_RESPALDO: ${MINIMO_RESPALDO:-0.6}
+      LIMITE_POR_MINUTO: ${LIMITE_POR_MINUTO:-8}
+      CONFIAR_EN_PROXY: ${CONFIAR_EN_PROXY:-false}
+      CLAVE_CEE: ${CLAVE_CEE:-}
       EMBEDDINGS_PROVEEDOR: ${EMBEDDINGS_PROVEEDOR:-sentence-transformers}
     volumes:
       # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.
       - ./corpus:/corpus:ro
+      # Set de preguntas del benchmark y carpeta donde quedan sus informes (Fase 2).
+      - ./benchmark:/benchmark
       - modelos_embeddings:/root/.cache/huggingface
     depends_on:
       db:

@@ -1,0 +1,77 @@
+{
+  "descripcion": "Corpus COMPLEMENTARIO de PRUEBA: contenido académico redactado a partir de fuentes públicas (ver la sección Fuentes de cada documento). No es material oficial ni validado por el CEE; se retira cuando el CEE entregue sus documentos. Los textos están en fuentes/ y los PDF se generan con scripts/generar_corpus_complementario.py.",
+  "documentos": [
+    {
+      "archivo": "cadena_m1_fundamentos.pdf",
+      "titulo": "Gestión de la Cadena de Suministro – Módulo 1: Fundamentos de la cadena de suministro y modelo SCOR (material complementario)",
+      "curso": "Gestión de la Cadena de Suministro",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "cadena_m2_pronostico.pdf",
+      "titulo": "Gestión de la Cadena de Suministro – Módulo 2: Pronóstico y planificación de la demanda (material complementario)",
+      "curso": "Gestión de la Cadena de Suministro",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "cadena_m3_inventarios.pdf",
+      "titulo": "Gestión de la Cadena de Suministro – Módulo 3: Gestión de inventarios (material complementario)",
+      "curso": "Gestión de la Cadena de Suministro",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "cadena_m4_indicadores.pdf",
+      "titulo": "Gestión de la Cadena de Suministro – Módulo 4: Indicadores y mejora del desempeño logístico (material complementario)",
+      "curso": "Gestión de la Cadena de Suministro",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "lean_u1_pensamiento_lean.pdf",
+      "titulo": "Lean Six Sigma Green Belt – Unidad 1: Pensamiento Lean (material complementario)",
+      "curso": "Lean Six Sigma Green Belt",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "lean_u2_dmaic.pdf",
+      "titulo": "Lean Six Sigma Green Belt – Unidad 2: Six Sigma y la metodología DMAIC (material complementario)",
+      "curso": "Lean Six Sigma Green Belt",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "lean_u3_estadistica.pdf",
+      "titulo": "Lean Six Sigma Green Belt – Unidad 3: Herramientas estadísticas y control estadístico de procesos (material complementario)",
+      "curso": "Lean Six Sigma Green Belt",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "lean_u4_proyecto.pdf",
+      "titulo": "Lean Six Sigma Green Belt – Unidad 4: Proyecto de mejora (material complementario)",
+      "curso": "Lean Six Sigma Green Belt",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "pmbok_u1_alcance.pdf",
+      "titulo": "Gestión de Proyectos con el PMBOK – Unidad 1: Fundamentos y gestión del alcance (material complementario)",
+      "curso": "Gestión de Proyectos con el PMBOK",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "pmbok_u2_cronograma.pdf",
+      "titulo": "Gestión de Proyectos con el PMBOK – Unidad 2: Gestión del cronograma (material complementario)",
+      "curso": "Gestión de Proyectos con el PMBOK",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "pmbok_u3_costos.pdf",
+      "titulo": "Gestión de Proyectos con el PMBOK – Unidad 3: Gestión de los costos y del valor ganado (material complementario)",
+      "curso": "Gestión de Proyectos con el PMBOK",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "pmbok_u4_riesgos_interesados.pdf",
+      "titulo": "Gestión de Proyectos con el PMBOK – Unidad 4: Gestión de los riesgos y de los interesados (material complementario)",
+      "curso": "Gestión de Proyectos con el PMBOK",
+      "tipo": "separata"
+    }
+  ]
+}
