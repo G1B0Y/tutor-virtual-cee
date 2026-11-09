@@ -17,11 +17,27 @@ class Fragmento:
 def extraer_paginas(ruta: Path) -> list[str]:
     """Texto de cada página. Un PDF escaneado (sin texto) devuelve páginas vacías."""
     lector = PdfReader(str(ruta))
-    return [limpiar(p.extract_text() or "") for p in lector.pages]
+    return [limpiar(_texto_de(p)) for p in lector.pages]
+
+
+def _texto_de(pagina) -> str:
+    """Los PDF exportados de Google Docs salen con una palabra por línea en la extracción normal de pypdf
+    (09/11/2026, módulos de Sistemas Integrados Empresariales): sin líneas no hay oraciones ni viñetas y los
+    fragmentos se cortan en cualquier palabra. En ese caso se usa el modo "layout", que respeta las líneas."""
+    texto = pagina.extract_text() or ""
+    if palabra_por_linea(texto):
+        texto = pagina.extract_text(extraction_mode="layout") or texto
+    return texto
+
+
+def palabra_por_linea(texto: str) -> bool:
+    """Más del 80 % de las líneas con texto tienen una sola palabra (y hay al menos 20)."""
+    lineas = [linea.split() for linea in texto.splitlines() if linea.strip()]
+    return len(lineas) >= 20 and sum(len(l) == 1 for l in lineas) / len(lineas) > 0.8
 
 
 def limpiar(texto: str) -> str:
-    texto = texto.replace("­", "")  # guiones invisibles
+    texto = texto.replace("\u00ad", "").replace("\u200b", "")  # guiones invisibles y espacios de ancho cero
     texto = re.sub(r"-\n(\w)", r"\1", texto)  # palabras cortadas al final de línea
     lineas = [re.sub(r"\s+", " ", linea).strip() for linea in texto.splitlines()]
     return "\n".join(linea for linea in lineas if linea)

@@ -1,0 +1,23 @@
+{
+  "descripcion": "Curso Sistemas Integrados Empresariales: teoría de los módulos de Marketing, Ventas y CRM, entregada por el equipo (Anyela, 09/11/2026) para que el ingeniero valide las respuestas. El curso tiene más módulos; por ahora se cargan estos 3. Los PDF son los originales (exportados de Google Docs), sin cambios.",
+  "documentos": [
+    {
+      "archivo": "sie_marketing.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Marketing: el proceso de marketing",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_ventas.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Ventas: de la negociación a la formalización comercial",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_crm.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de CRM: gestión, post-venta y fidelización",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    }
+  ]
+}
