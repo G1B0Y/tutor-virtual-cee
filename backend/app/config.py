@@ -54,6 +54,14 @@ class Configuracion(BaseSettings):
     # respuesta que debe estar en los documentos o la pregunta; si no, la oración se quita. Los elementos de una lista
     # deben aparecer como frase en los documentos. Regla de Alfredo (08/11/2026): no inventar nada.
     minimo_respaldo: float = 0.6
+    # Preguntas de razonamiento (app/rag/razonamiento.py, 09/11/2026: el profesor de Sistemas Integrados
+    # Empresariales pregunta casos, porqués y comparaciones): más fragmentos y más margen para juntar ideas de varios
+    # módulos, un umbral algo más amplio (el caso usa otras palabras que el documento) y un respaldo mínimo menor
+    # (la respuesta usa las palabras del caso y conectores). Provisionales: calibrar con benchmark/preguntas_sie.json.
+    fragmentos_razonamiento: int = 6
+    margen_razonamiento: float = 0.8
+    umbral_razonamiento: float = 0.20
+    minimo_respaldo_razonamiento: float = 0.5
     # Preguntas por alumno y por minuto (RF-M06); 0 = sin límite. Con una sola generación a la vez, un alumno que
     # manda muchas seguidas deja esperando a los demás.
     limite_por_minuto: int = 8

@@ -53,3 +53,17 @@ def test_benchmark_de_punta_a_punta(tmp_path):
     texto = md.read_text(encoding="utf-8")
     assert "recall@5" in texto and "Aciertos con fuente" in texto
     assert len(csv_.read_text(encoding="utf-8-sig").splitlines()) == 61
+
+
+def test_benchmark_del_curso_sie(tmp_path):
+    # 09/11/2026: el set del curso Sistemas Integrados Empresariales corre sobre su propia carpeta (sin FAQs).
+    if not URL:
+        pytest.skip("TEST_DATABASE_URL no está definida")
+    preguntas = json.loads((RAIZ / "benchmark" / "preguntas_sie.json").read_text(encoding="utf-8"))
+    antes = _conteo(URL)
+    inf = ejecutar(URL, RAIZ / "corpus" / "sie", preguntas, ["hash"], ["falso"], Configuracion(),
+                   proveedor="hash", crear_llm=lambda nombre: LLMFalso(), aviso=lambda m: None)
+    assert _conteo(URL) == antes
+    total = len(preguntas["dentro"]) + len(preguntas["fuera"])
+    assert len(inf.filas) == total * 2
+    assert inf.embeddings[0].recall5 > 0

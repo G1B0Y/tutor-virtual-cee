@@ -15,6 +15,7 @@ from app.rag.busqueda import (FragmentoEncontrado, buscar_faq, buscar_fragmentos
 from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
 from app.rag.prompt import SIN_EVIDENCIA as SIN_EVIDENCIA_DEL_MODELO
+from app.rag.razonamiento import es_razonamiento
 from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta, mensajes_de_reintento
 from app.rag.respaldo import revisar
 
@@ -213,11 +214,17 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     if faq and faq.distancia <= config.umbral_faq:
         return terminar(Respuesta(FAQ, faq.respuesta, [Fuente(faq.fuente or "Preguntas frecuentes del CEE", None)]))
 
-    def buscar(v: list[float], texto: str, limite: int, titulo: str | None = None) -> list[FragmentoEncontrado]:
-        return buscar_fragmentos(conexion, v, limite, titulo, texto, config.umbral_distancia, config.peso_lexico)
+    # Casos, porqués y comparaciones (09/11/2026): más fragmentos y margen, umbral algo más amplio.
+    razonar = es_razonamiento(pregunta)
+    limite = config.fragmentos_razonamiento if razonar else config.fragmentos_por_consulta
+    margen = config.margen_razonamiento if razonar else config.margen_puntaje
+    umbral = max(config.umbral_razonamiento, config.umbral_distancia) if razonar else config.umbral_distancia
 
-    encontrados = buscar(vector, pregunta, config.fragmentos_por_consulta)
-    utiles = seleccionar(encontrados, config.umbral_distancia, config.margen_puntaje)
+    def buscar(v: list[float], texto: str, limite: int, titulo: str | None = None) -> list[FragmentoEncontrado]:
+        return buscar_fragmentos(conexion, v, limite, titulo, texto, umbral, config.peso_lexico)
+
+    encontrados = buscar(vector, pregunta, limite)
+    utiles = seleccionar(encontrados, umbral, margen)
     contexto = None
     if not utiles:
         utiles = _por_sigla(conexion, vector, pregunta)  # antes que el seguimiento: la sigla dice dónde buscar
@@ -230,17 +237,16 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         documento = documento_anterior
         if not documento and anterior:
             previo = buscar(emb.codificar([texto_para_buscar(anterior)], es_consulta=True)[0], anterior, 1)
-            documento = previo[0].titulo if previo and previo[0].distancia <= config.umbral_distancia else None
+            documento = previo[0].titulo if previo and previo[0].distancia <= umbral else None
         texto = f"{texto_para_buscar(anterior)}. {texto_para_buscar(pregunta)}" if anterior else texto_para_buscar(pregunta)
         juntas = emb.codificar([texto], es_consulta=True)[0]
-        en_documento = seleccionar(buscar(juntas, f"{anterior or ''} {pregunta}", config.fragmentos_por_consulta,
+        en_documento = seleccionar(buscar(juntas, f"{anterior or ''} {pregunta}", limite,
                                           documento),
-                                   config.umbral_distancia, config.margen_puntaje) if documento else []
+                                   umbral, margen) if documento else []
         if en_documento:
             utiles, contexto = en_documento, anterior
         elif not utiles:
-            utiles = seleccionar(buscar(juntas, f"{anterior or ''} {pregunta}", config.fragmentos_por_consulta),
-                                 config.umbral_distancia, config.margen_puntaje)
+            utiles = seleccionar(buscar(juntas, f"{anterior or ''} {pregunta}", limite), umbral, margen)
             contexto = anterior if utiles else None
     utiles = _con_unidad_pedida(conexion, vector, pregunta, utiles)
     if not utiles:
@@ -255,7 +261,8 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         # Lo mismo que vio el modelo: número, título y página de cada documento (puede citarlos) y su texto.
         vistos = [f"[{n}] {f.titulo}, página {f.pagina or ''}. {f.texto}" for n, f in enumerate(utiles, 1)]
         resultado, motivo = revisar(limpiar_respuesta(texto), vistos,
-                                    f"{anterior or ''} {pregunta} {texto_para_buscar(pregunta)}", config.minimo_respaldo)
+                                    f"{anterior or ''} {pregunta} {texto_para_buscar(pregunta)}",
+                                    config.minimo_respaldo_razonamiento if razonar else config.minimo_respaldo)
         if resultado is None:
             registro.warning("Respuesta descartada: %s", motivo)
             return SIN_EVIDENCIA_DEL_MODELO
@@ -266,7 +273,9 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     if not turno.tomar():
         return terminar(Respuesta(OCUPADO, "Hay muchas consultas en este momento. Intenta de nuevo en un minuto."))
     try:
-        mensajes = armar_mensajes(pregunta, utiles, contexto)
+        mensajes = armar_mensajes(pregunta, utiles, contexto, razonar)
+        if razonar:
+            registro.info("Pregunta de razonamiento: %d fragmentos al modelo", len(utiles))
         texto = revisado(llm.generar(mensajes))
         if es_sin_evidencia(texto) and utiles[0].puntaje >= config.puntaje_reintento:
             # granite varía: con los mismos documentos respondió bien el OEE y el Cpk en una ronda y en otra se

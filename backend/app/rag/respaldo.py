@@ -33,7 +33,11 @@ _VACIAS = set("""
     curso cursos tema temas unidad unidades documento documentos segun parte partes general importante clave
     claves alumno alumnos pregunta respuesta informacion materiales material programa siguiente ejemplo
     refiere significa significan consiste utiliza utilizan permite permiten llama llaman conoce conocen
+    entonces tanto deberia deberian conviene ello razon debido decir caso casos aplica aplicar aplicarse aplicado
+    conclusion concluye primero segundo luego finalmente situacion modulo modulos dado ademas mientras
     """.split())
+# La última línea (09/11/2026): conectores de un razonamiento ("por lo tanto", "en este caso", "según el módulo"),
+# que no dicen nada del contenido y no deben bajar el respaldo de una respuesta razonada.
 
 _ITEM = re.compile(r"(?:^|\s)(\d{1,2}[.)]|[-•*])\s+")
 # Si la lista está numerada, el guion no marca ítems: "1. Seiri - Clasificar… 2. Seiton - Ordenar…" (08/11/2026).

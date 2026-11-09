@@ -24,9 +24,21 @@ Reglas obligatorias:
 12. Copia los nombres, términos y fórmulas tal como están escritos en los documentos (por ejemplo, los nombres japoneses de las 5S), sin traducirlos ni cambiarlos.
 13. Si la pregunta nombra una edición, versión o año (por ejemplo, "la octava edición"), responde solo con lo que los documentos dicen de esa edición, no de otra."""
 
+# Preguntas de razonamiento (app/rag/razonamiento.py, 09/11/2026): el profesor pregunta casos, porqués y
+# comparaciones cuya respuesta no está escrita tal cual. Se permite razonar, pero solo con lo que dicen los documentos.
+RAZONAMIENTO = f"""
+14. Esta pregunta pide razonar: aplicar lo que dicen los documentos a un caso, comparar, explicar un porqué o sacar
+una consecuencia. Aquí sí puedes llegar a una conclusión que no esté escrita tal cual, siempre que salga de los
+conceptos de los documentos (esta regla prevalece sobre la 6 solo para eso). Responde así:
+- Primero la conclusión, en una oración, usando los términos del documento.
+- Luego el razonamiento en 2 a 4 oraciones: qué concepto del documento usas y por qué se aplica al caso
+  (por ejemplo: "Según el módulo de CRM, …; por eso, en este caso, …").
+- No agregues datos, cifras, nombres, ejemplos ni teorías que no estén en los documentos o en la pregunta.
+- Si los documentos no tienen los conceptos necesarios para razonarlo, responde exactamente: {SIN_EVIDENCIA}"""
+
 
 def armar_mensajes(pregunta: str, fragmentos: list[FragmentoEncontrado],
-                   anterior: str | None = None) -> list[dict[str, str]]:
+                   anterior: str | None = None, razonar: bool = False) -> list[dict[str, str]]:
     documentos = "\n\n".join(
         f"[{n}] {f.titulo}" + (f", página {f.pagina}" if f.pagina else "") + f"\n{f.texto}"
         for n, f in enumerate(fragmentos, start=1)
@@ -36,7 +48,8 @@ def armar_mensajes(pregunta: str, fragmentos: list[FragmentoEncontrado],
         f"<documentos>\n{documentos}\n</documentos>\n\n{contexto}"
         f"<pregunta_del_alumno>\n{pregunta}\n</pregunta_del_alumno>"
     )
-    return [{"role": "system", "content": INSTRUCCIONES}, {"role": "user", "content": contenido}]
+    instrucciones = INSTRUCCIONES + (RAZONAMIENTO if razonar else "")
+    return [{"role": "system", "content": instrucciones}, {"role": "user", "content": contenido}]
 
 
 REINTENTO = ("Revisa otra vez los documentos: tienen información sobre la pregunta. Responde solo con lo que dicen, "
