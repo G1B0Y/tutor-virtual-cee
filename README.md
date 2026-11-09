@@ -178,6 +178,23 @@ docker compose exec api python -m app.diagnostico "¿Cómo se calcula el OEE?"
 
 Muestra los fragmentos encontrados (distancia por significado y puntaje de la búsqueda híbrida), cuáles van al modelo, la respuesta del modelo tal cual y lo que deja el control de respaldo. No guarda nada. Con `--sin-llm` solo hace la búsqueda. Sirve para calibrar `UMBRAL_DISTANCIA`, `PESO_LEXICO`, `MARGEN_PUNTAJE` y `MINIMO_RESPALDO` en el `.env`.
 
+### 12. Que otros lo prueben desde su PC (túnel temporal)
+
+Para una reunión o una revisión del equipo. El chat y la API salen por un solo enlace; la base y Ollama no se exponen.
+**Cualquiera con el enlace puede usar el tutor con tu PC mientras el túnel esté abierto: ciérralo al terminar (Ctrl+C).**
+
+1. Con el tutor levantado (`docker compose up -d`, `/salud` en ok), pon `CONFIAR_EN_PROXY=true` en `.env` y aplica con
+   `docker compose up -d` (así cada visitante tiene su propio límite de preguntas por minuto). Vuelve a `false` después.
+2. En `frontend`: `npm ci` (la primera vez) y `npm run compartir` (deja esa terminal abierta: sirve el chat en
+   http://127.0.0.1:4173 y pasa `/api` a la API).
+3. En otra terminal, una de estas:
+   - **Cloudflare (sin cuenta):** `winget install --id Cloudflare.cloudflared` (una vez) y
+     `cloudflared tunnel --url http://127.0.0.1:4173`. Copia el enlace `https://….trycloudflare.com` que aparece.
+   - **ngrok (cuenta gratuita, sin tarjeta):** `winget install ngrok.ngrok`, `ngrok config add-authtoken <tu token>`
+     (el token está en el panel de ngrok; no lo pegues en el repo) y `ngrok http 127.0.0.1:4173`. Copia el enlace
+     `https://….ngrok-free.app`; la primera vez muestra un aviso de ngrok y hay que darle a "Visit Site".
+4. Pasa el enlace por el chat del equipo. El enlace cambia cada vez que abres el túnel.
+
 ### Comandos
 
 | Qué | Comando |

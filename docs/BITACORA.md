@@ -2,6 +2,10 @@
 
 Una entrada por sesión de trabajo, de la más reciente a la más antigua. El estado actual siempre está en `CLAUDE.md` y el plan en `docs/ROADMAP.md`; aquí queda el historial.
 
+## 09/11/2026
+
+- **Túnel para que el equipo pruebe el tutor desde su PC** (pedido de Alfredo para la reunión): `npm run compartir` sirve el chat y pasa `/api` a la API por el mismo puerto (4173), así basta un túnel (cloudflared sin cuenta o ngrok gratuito). Pasos en el README, sección 12. Probado en la nube con una API simulada. Falta: levantarlo en la PC de Alfredo (la sesión remota se cortó por "extra_usage_unavailable").
+
 ## 08/11/2026
 
 - **Ronda con 356f4e0 en la PC de Alfredo:** principios del PMBOK 8.ª edición bien 3 de 3 (con el fragmento siguiente pegado llega la lista de 6); DMAIC, 8 desperdicios, CPI y las 3 trampas bien; MAPE ya sin "/ 100"; la matriz poder-interés sigue mezclando. 5S y OEE: descartadas 3 de 3 por el control (listas que no están en los documentos) y sin segundo intento, aunque en pruebas aparte el puntaje era 2,0/1,96 y sí reintentaba. Se agregó al log "Sin segundo intento: puntaje X < umbral" para ver por qué. Falta: ver la respuesta tal cual de granite en 5S y OEE.
