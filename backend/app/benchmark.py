@@ -76,6 +76,13 @@ def cumple_claves(respuesta: str, claves: list[list[str]]) -> bool:
     return all(any(re.search(r"(?<!\w)" + re.escape(normalizar(a)), texto) for a in grupo) for grupo in claves)
 
 
+def dice_lo_prohibido(respuesta: str, frases: list[str]) -> bool:
+    """La respuesta contiene una frase que la hace incorrecta aunque tenga las claves (09/11/2026: a "¿es correcto que
+    el vendedor lo atienda?" granite dijo "Sí, es correcto…" y nombró al CRM, así que pasaba la clave "crm")."""
+    texto = normalizar(respuesta)
+    return any(normalizar(f) in texto for f in frases)
+
+
 def umbral_que_separa(dentro: list[float], fuera: list[float], desde: float = 0.05, hasta: float = 1.20,
                       paso: float = 0.01) -> tuple[float, int, int]:
     """Umbral de distancia que deja pasar la mayor cantidad de preguntas de dentro y la menor de fuera.
@@ -314,7 +321,8 @@ def evaluar_llm(conexion: psycopg.Connection, emb: Embeddings, llm, preguntas: d
                         ttft_ms=medida["ttft_ms"] if medida else None,
                         respuesta=" ".join(r.respuesta.split())[:400])
             if grupo == "dentro":
-                fila.correcta = r.estado in (RESPONDIDA, FAQ) and cumple_claves(r.respuesta, p["claves"])
+                fila.correcta = (r.estado in (RESPONDIDA, FAQ) and cumple_claves(r.respuesta, p["claves"])
+                                 and not dice_lo_prohibido(r.respuesta, p.get("no_debe_decir", [])))
                 fila.fuente_ok = r.estado == FAQ or any(f.titulo == titulos[p["archivo"]] for f in r.fuentes)
             else:
                 # orientacion: respuesta fija que deriva al Campus o al CEE (p. ej. "mi nota"): tampoco inventa

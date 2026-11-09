@@ -62,6 +62,13 @@ class Configuracion(BaseSettings):
     margen_razonamiento: float = 0.8
     umbral_razonamiento: float = 0.20
     minimo_respaldo_razonamiento: float = 0.5
+    # Con razonamiento, el segundo intento (REINTENTO_RAZONAMIENTO) se pide desde este puntaje: en la PC de Alfredo
+    # granite se abstuvo en casos que los módulos sí cubren (09/11/2026). Provisional.
+    puntaje_reintento_razonamiento: float = 1.0
+    # Preguntas que piden una cantidad ("las cuatro funciones del CRM"): al mejor fragmento se le pegan hasta estos
+    # fragmentos siguientes del mismo documento (también de la página siguiente), porque la lista se reparte en varios
+    # y granite completaba con elementos inventados (09/11/2026).
+    fragmentos_lista: int = 4
     # Preguntas por alumno y por minuto (RF-M06); 0 = sin límite. Con una sola generación a la vez, un alumno que
     # manda muchas seguidas deja esperando a los demás.
     limite_por_minuto: int = 8

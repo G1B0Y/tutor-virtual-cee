@@ -59,3 +59,49 @@ def test_una_pregunta_de_razonamiento_lleva_mas_fragmentos_y_la_regla_14(db):
     sistema, usuario = llm.llamadas[0]
     assert RAZONAMIENTO not in sistema["content"]
     assert usuario["content"].count("Sistemas Integrados Empresariales –") <= CONFIG.fragmentos_por_consulta
+
+
+def test_las_cuatro_funciones_del_crm_llegan_completas_al_modelo(db):
+    """09/11/2026: las funciones A–D del CRM ocupan 5 fragmentos de dos páginas; granite veía A y B, inventaba dos y el
+    control descartaba la lista. Ahora al mejor fragmento se le pegan los siguientes."""
+    from app.consulta import _con_lista_pedida
+    from app.rag.busqueda import buscar_fragmentos
+
+    emb = EmbeddingsHash()
+    cargar_corpus(db, emb, CORPUS / "sie")
+    pregunta = "¿Cuáles son las cuatro funciones del CRM?"
+    vector = emb.codificar([pregunta], es_consulta=True)[0]
+    titulo = next(t for (t,) in db.execute("SELECT DISTINCT titulo FROM fragmentos_vigentes").fetchall()
+                  if "CRM" in t)
+    primero = next(f for f in buscar_fragmentos(db, vector, 50, titulo, pregunta, 2.0)
+                   if "A continuación, se detallan" in f.texto)
+    juntos = _con_lista_pedida(db, vector, pregunta, [primero], CONFIG.fragmentos_lista)
+    texto = juntos[0].texto
+    for funcion in ("A. Almacenamiento de Data", "B. Recepción y Registro de Reclamos", "C. Atención Post-Venta",
+                    "D. Evaluación de la Satisfacción del Cliente"):
+        assert funcion in texto
+    assert len(texto) <= 4000
+    # Sin una cantidad en la pregunta no se pega nada.
+    assert _con_lista_pedida(db, vector, "¿Qué es el CRM?", [primero], CONFIG.fragmentos_lista) == [primero]
+
+
+class LLMQueSeAbstieneUnaVez(LLMQueCopia):
+    def generar(self, mensajes):
+        self.llamadas.append(mensajes)
+        if len(self.llamadas) == 1:
+            return "SIN_EVIDENCIA"
+        self.llamadas.pop()  # LLMQueCopia.generar la vuelve a anotar
+        return super().generar(mensajes)
+
+
+def test_con_razonamiento_el_segundo_intento_lleva_su_aviso(db):
+    from app.rag.prompt import REINTENTO_RAZONAMIENTO
+
+    emb = EmbeddingsHash()
+    cargar_corpus(db, emb, CORPUS / "sie")
+    llm = LLMQueSeAbstieneUnaVez()
+    config = CONFIG.model_copy(update={"puntaje_reintento_razonamiento": 0.0})
+    r = responder("¿Qué pasaría si una carpintería empieza a fabricar una silla sin tener la orden de pedido?",
+                  db, emb, llm, Turno(3), config)
+    assert len(llm.llamadas) == 2 and llm.llamadas[1][-1]["content"].endswith(REINTENTO_RAZONAMIENTO)
+    assert r.estado == RESPONDIDA

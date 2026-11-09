@@ -139,3 +139,30 @@ def test_en_una_respuesta_razonada_se_siguen_quitando_las_cifras_y_la_teoria_inv
     assert texto is not None
     assert "70" not in texto and "SERVQUAL" not in texto
     assert "Debe atenderlo el área de CRM" in texto
+
+
+def test_el_prompt_de_razonamiento_pide_si_o_no_brevedad_y_no_abstenerse_por_no_estar_literal():
+    # Benchmark del curso en la PC de Alfredo (09/11/2026): "¿Es correcto que el vendedor lo atienda?" → "Sí, es
+    # correcto…" (al revés del módulo); R05 y R06 se abstuvieron; R08 y R09 llegaron al tope de 512 tokens.
+    assert '"Sí" o "No"' in RAZONAMIENTO
+    assert "NO es motivo" in RAZONAMIENTO
+    assert "Máximo 100 palabras" in RAZONAMIENTO
+    assert "biblioteca" in RAZONAMIENTO  # el ejemplo es de otro tema: no le da datos del curso
+
+
+def test_el_segundo_intento_de_razonamiento_tiene_su_propio_aviso():
+    from app.rag.prompt import REINTENTO, REINTENTO_RAZONAMIENTO, mensajes_de_reintento
+
+    mensajes = armar_mensajes("¿Por qué…?", [], razonar=True)
+    assert mensajes_de_reintento(mensajes)[-1]["content"].endswith(REINTENTO)
+    assert mensajes_de_reintento(mensajes, REINTENTO_RAZONAMIENTO)[-1]["content"].endswith(REINTENTO_RAZONAMIENTO)
+
+
+def test_el_benchmark_no_da_por_buena_una_conclusion_al_reves():
+    from app.benchmark import cumple_claves, dice_lo_prohibido
+
+    r12 = next(p for p in PREGUNTAS["dentro"] if p["id"] == "R12")
+    al_reves = "Sí, es correcto que el vendedor lo atienda; no hace falta derivarlo al CRM."
+    assert cumple_claves(al_reves, r12["claves"]) and dice_lo_prohibido(al_reves, r12["no_debe_decir"])
+    bien = "No, no es correcto. Según el módulo de CRM, después de la venta el cliente debe ser atendido por el CRM."
+    assert cumple_claves(bien, r12["claves"]) and not dice_lo_prohibido(bien, r12["no_debe_decir"])

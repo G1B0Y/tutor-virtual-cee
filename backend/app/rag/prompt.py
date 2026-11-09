@@ -34,7 +34,19 @@ conceptos de los documentos (esta regla prevalece sobre la 6 solo para eso). Res
 - Luego el razonamiento en 2 a 4 oraciones: qué concepto del documento usas y por qué se aplica al caso
   (por ejemplo: "Según el módulo de CRM, …; por eso, en este caso, …").
 - No agregues datos, cifras, nombres, ejemplos ni teorías que no estén en los documentos o en la pregunta.
-- Si los documentos no tienen los conceptos necesarios para razonarlo, responde exactamente: {SIN_EVIDENCIA}"""
+- Si los documentos dan una regla o una clasificación, revisa qué dice exactamente para el caso antes de concluir,
+  y no la confundas con la regla o la categoría vecina.
+- Si preguntan "¿es correcto…?" o "¿está bien…?", empieza con "Sí" o "No" según lo que dicen los documentos,
+  aunque la pregunta sugiera lo contrario.
+- Que la conclusión no esté escrita tal cual NO es motivo para responder {SIN_EVIDENCIA}. Responde exactamente
+  {SIN_EVIDENCIA} solo si ningún concepto de los documentos sirve para razonar la pregunta.
+- Máximo 100 palabras.
+
+Ejemplo de la forma (de otro tema; no uses sus datos):
+Documento: "Un libro prestado se devuelve en 7 días. Si se devuelve después, se cobra una multa."
+Pregunta: "Un usuario devolvió el libro a los 10 días, ¿es correcto que no pague multa?"
+Respuesta: "No, no es correcto. Según el reglamento de la biblioteca, el libro se devuelve en 7 días y, si se devuelve
+después, se cobra una multa. Como lo devolvió a los 10 días, se pasó del plazo; por lo tanto, debe pagar la multa.\""""
 
 
 def armar_mensajes(pregunta: str, fragmentos: list[FragmentoEncontrado],
@@ -57,10 +69,19 @@ REINTENTO = ("Revisa otra vez los documentos: tienen información sobre la pregu
              f"exactamente: {SIN_EVIDENCIA}")
 
 
-def mensajes_de_reintento(mensajes: list[dict[str, str]]) -> list[dict[str, str]]:
+# Preguntas de razonamiento (09/11/2026): en la PC de Alfredo granite respondió SIN_EVIDENCIA a "¿qué pasaría si una
+# carpintería fabrica sin orden de pedido?" y a "¿es correcto que un vendedor es exitoso por entregar proformas?",
+# aunque los documentos tienen justo esos conceptos.
+REINTENTO_RAZONAMIENTO = ("Revisa otra vez los documentos: tienen los conceptos para razonar esta pregunta, aunque la "
+                          "conclusión no esté escrita tal cual. Aplica esos conceptos al caso y responde con la "
+                          "conclusión y el razonamiento, sin agregar nada que no esté en los documentos. Si de verdad "
+                          f"ningún concepto sirve, responde exactamente: {SIN_EVIDENCIA}")
+
+
+def mensajes_de_reintento(mensajes: list[dict[str, str]], aviso: str = REINTENTO) -> list[dict[str, str]]:
     """El segundo intento lleva la misma pregunta y los mismos documentos, con un aviso al final."""
     *anteriores, ultimo = mensajes
-    return [*anteriores, {**ultimo, "content": f"{ultimo['content']}\n\n{REINTENTO}"}]
+    return [*anteriores, {**ultimo, "content": f"{ultimo['content']}\n\n{aviso}"}]
 
 
 _LATEX = [

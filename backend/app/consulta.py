@@ -16,8 +16,9 @@ from app.rag.embeddings import Embeddings
 from app.rag.llm import LLM, ErrorLLM
 from app.rag.prompt import SIN_EVIDENCIA as SIN_EVIDENCIA_DEL_MODELO
 from app.rag.razonamiento import es_razonamiento
-from app.rag.prompt import armar_mensajes, es_sin_evidencia, limpiar_respuesta, mensajes_de_reintento
-from app.rag.respaldo import revisar
+from app.rag.prompt import (REINTENTO, REINTENTO_RAZONAMIENTO, armar_mensajes, es_sin_evidencia, limpiar_respuesta,
+                            mensajes_de_reintento)
+from app.rag.respaldo import cantidad_pedida, revisar
 
 registro = logging.getLogger("tutor")
 
@@ -190,6 +191,28 @@ def _con_continuacion(conexion: psycopg.Connection, vector: list[float], pregunt
     return [unido, *(f for f in utiles[1:] if (f.titulo, f.orden) != (siguiente.titulo, siguiente.orden))]
 
 
+def _con_lista_pedida(conexion: psycopg.Connection, vector: list[float], pregunta: str,
+                      utiles: list[FragmentoEncontrado], cuantos: int,
+                      largo_maximo: int = 4000) -> list[FragmentoEncontrado]:
+    """"¿Cuáles son las cuatro funciones del CRM?": en el módulo de CRM las funciones A–D ocupan 5 fragmentos de dos
+    páginas y granite veía solo A y B y completaba con dos inventadas (el control descartó la lista, 09/11/2026). Si la
+    pregunta pide una cantidad, se pegan al mejor fragmento los siguientes del mismo documento, como un solo texto."""
+    if not utiles or not cantidad_pedida(pregunta) or cuantos <= 0:
+        return utiles
+    actual = unido = utiles[0]
+    usados = {(actual.titulo, actual.orden)}
+    for _ in range(cuantos):
+        siguiente = siguiente_fragmento(conexion, vector, actual)
+        if not siguiente or len(unido.texto) + len(siguiente.texto) > largo_maximo:
+            break
+        unido = replace(unido, texto=_unir(unido.texto, siguiente.texto))
+        usados.add((siguiente.titulo, siguiente.orden))
+        actual = siguiente
+    if unido is utiles[0]:
+        return utiles
+    return [unido, *(f for f in utiles[1:] if (f.titulo, f.orden) not in usados)][:3]
+
+
 def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm: LLM, turno: Turno,
               config: Configuracion, anterior: str | None = None, documento_anterior: str | None = None) -> Respuesta:
     """Seguimientos (los manda el navegador; no se guardan): `anterior` es la pregunta previa del alumno en el mismo
@@ -253,7 +276,8 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         return terminar(Respuesta(SIN_EVIDENCIA, "No encontré esa información en los materiales del CEE. "
                                   + config.mensaje_derivacion))
 
-    utiles = _con_continuacion(conexion, vector, pregunta, utiles)
+    lista = _con_lista_pedida(conexion, vector, pregunta, utiles, config.fragmentos_lista)
+    utiles = lista if lista is not utiles else _con_continuacion(conexion, vector, pregunta, utiles)
 
     def revisado(texto: str) -> str:
         if es_sin_evidencia(texto):
@@ -277,16 +301,18 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
         if razonar:
             registro.info("Pregunta de razonamiento: %d fragmentos al modelo", len(utiles))
         texto = revisado(llm.generar(mensajes))
-        if es_sin_evidencia(texto) and utiles[0].puntaje >= config.puntaje_reintento:
+        reintento = config.puntaje_reintento_razonamiento if razonar else config.puntaje_reintento
+        if es_sin_evidencia(texto) and utiles[0].puntaje >= reintento:
             # granite varía: con los mismos documentos respondió bien el OEE y el Cpk en una ronda y en otra se
             # abstuvo, o escribió las 5S con nombres y kanji inventados (08/11/2026). Si la evidencia es fuerte
             # (el fragmento tiene casi todas las palabras de la pregunta) se le pide una vez más.
             registro.info("Segundo intento: había evidencia fuerte (puntaje %.2f)", utiles[0].puntaje)
-            texto = revisado(llm.generar(mensajes_de_reintento(mensajes)))
+            aviso = REINTENTO_RAZONAMIENTO if razonar else REINTENTO
+            texto = revisado(llm.generar(mensajes_de_reintento(mensajes, aviso)))
         elif es_sin_evidencia(texto):
             # Para calibrar PUNTAJE_REINTENTO: en la PC de Alfredo, OEE y 5S se descartaron sin reintento en una
             # ronda y con reintento en otra, según cómo estaba escrita la pregunta (08/11/2026).
-            registro.info("Sin segundo intento: puntaje %.2f < %.2f", utiles[0].puntaje, config.puntaje_reintento)
+            registro.info("Sin segundo intento: puntaje %.2f < %.2f", utiles[0].puntaje, reintento)
     except ErrorLLM:
         mejor = utiles[0]
         return terminar(Respuesta(
