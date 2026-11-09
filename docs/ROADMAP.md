@@ -96,6 +96,8 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 5 – Pruebas y ensayo de PC3 (12–16/11)
 
+- [x] Curso Sistemas Integrados Empresariales: 3 módulos (Marketing, Ventas, CRM) en `corpus/sie/`, preguntas de razonamiento y su benchmark (`benchmark/preguntas_sie.json`) (09/11/2026, adelantado para la demo del 11/11).
+- [ ] Cargar `corpus/sie` y correr su benchmark en la PC de Alfredo antes del 11/11.
 - [ ] Correr el set de 30 preguntas sobre el sistema completo: ≥ 85 % correctas con fuente y 100 % de rechazos correctos.
 - [ ] Pruebas de prompt injection y entradas inválidas.
 - [ ] Apagar Ollama y la API durante la prueba y comprobar los mensajes del chat.

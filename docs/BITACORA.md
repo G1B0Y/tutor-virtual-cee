@@ -4,6 +4,10 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 
 ## 09/11/2026
 
+- **Curso Sistemas Integrados Empresariales** (pedido de Anyela vía Alfredo: entregables el 10/11 con la base cargada; el martes 11/11 el ingeniero y el profesor le preguntan al tutor). Se agregaron los 3 PDF de teoría (Marketing, Ventas y CRM) como módulos del curso en `corpus/sie/`. Los PDF son de Google Docs y pypdf los leía con una palabra por línea: arreglado (modo "layout" cuando pasa eso), con prueba.
+- Alfredo avisó que el profesor no hará preguntas explícitas sino de razonamiento. **Decisión:** el tutor reconoce esas preguntas (porqué, caso, comparación, "¿qué área debe…?", "¿es correcto…?") y con ellas usa 6 fragmentos, umbral 0.20 y la regla 14 del prompt (conclusión + razonamiento solo con los conceptos de los documentos); el control acepta los conectores del razonamiento y sigue quitando cifras y listas inventadas. Benchmark del curso con 10 explícitas, 12 de razonamiento y 10 trampas. 233 pruebas.
+- Límite conocido: granite3.3:2b razona poco; en preguntas de varios pasos puede abstenerse. Se mide con el benchmark del curso en la PC de Alfredo.
+- Pendiente: cargar y medir en su PC; confirmar si "crear el curso en el campus" es en el Moodle del Grupo 3.
 - **Túnel para que el equipo pruebe el tutor desde su PC** (pedido de Alfredo para la reunión): `npm run compartir` sirve el chat y pasa `/api` a la API por el mismo puerto (4173), así basta un túnel (cloudflared sin cuenta o ngrok gratuito). Pasos en el README, sección 12. Probado en la nube con una API simulada. Falta: levantarlo en la PC de Alfredo (la sesión remota se cortó por "extra_usage_unavailable").
 
 ## 08/11/2026

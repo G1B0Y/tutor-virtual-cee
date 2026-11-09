@@ -88,6 +88,25 @@ docker compose exec api python -m app.ingesta corpus /corpus/complementario
 
 Cada página dice **MATERIAL DE PRUEBA – no es material oficial ni validado por el CEE**. Se puede cargar junto con `corpus/prueba` (los títulos terminan en "(material complementario)" y no chocan). Cuando llegue el material del CEE se retira con `retirar` (arriba). El benchmark sigue usando solo `corpus/prueba`. Los textos están en `corpus/complementario/fuentes/*.md`; si se corrige uno, se regeneran los PDF con `python scripts/generar_corpus_complementario.py` y se vuelve a cargar la carpeta (entran como versión nueva).
 
+#### Curso Sistemas Integrados Empresariales (Marketing, Ventas y CRM)
+
+`corpus/sie/` tiene la teoría de 3 módulos del curso (los PDF originales, sin cambios), para que el ingeniero y el profesor le pregunten al tutor:
+
+```bash
+docker compose exec api python -m app.ingesta corpus /corpus/sie
+docker compose exec api python -m app.ingesta estado      # deben aparecer los 3 módulos
+```
+
+El curso tiene más módulos: para agregar uno, copiar el PDF a `corpus/sie/`, sumarlo a `corpus/sie/corpus.json` (mismo `curso`) y volver a correr el primer comando (los que no cambiaron se saltan).
+
+**Preguntas de razonamiento.** El tutor reconoce las preguntas que piden aplicar, comparar o justificar ("¿por qué…?", "¿qué pasaría si…?", "si una empresa…", "¿qué área debe…?", "¿es correcto…?", "¿en qué se diferencia…?"). Con ellas busca más fragmentos (6 en vez de 4) y le permite al modelo sacar una conclusión que no está escrita tal cual, pero solo con los conceptos de los documentos (regla 14 del prompt). El control de respaldo sigue quitando cifras y listas inventadas. Benchmark del curso (10 explícitas, 12 de razonamiento y 10 trampas):
+
+```bash
+docker compose exec api python -m app.benchmark --corpus /corpus/sie --preguntas /benchmark/preguntas_sie.json --embeddings intfloat/multilingual-e5-small --llm granite3.3:2b
+```
+
+Los valores se ajustan en `.env`: `FRAGMENTOS_RAZONAMIENTO` (6), `MARGEN_RAZONAMIENTO` (0.8), `UMBRAL_RAZONAMIENTO` (0.20) y `MINIMO_RESPALDO_RAZONAMIENTO` (0.5).
+
 ### 6. Abrir el chat dentro del campus simulado
 
 ```bash
