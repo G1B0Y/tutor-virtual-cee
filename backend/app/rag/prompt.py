@@ -39,8 +39,11 @@ conceptos de los documentos (esta regla prevalece sobre la 6 solo para eso). Res
   punto concreto del documento podría cambiar la conclusión; si no hay ninguno, no agregues condiciones.
 - Si los documentos dan una regla o una clasificación, revisa qué dice exactamente para el caso antes de concluir,
   y no la confundas con la regla o la categoría vecina.
-- Si preguntan "¿es correcto…?" o "¿está bien…?", empieza con "Sí" o "No" según lo que dicen los documentos,
-  aunque la pregunta sugiera lo contrario.
+- Si preguntan "¿es correcto…?", "¿está bien…?", "¿conviene…?", "¿debería…?" o "¿podría…?", empieza con "Sí" o
+  "No" según lo que dicen los documentos, aunque la pregunta sugiera lo contrario. Antes de escribir "Sí" o "No",
+  aplica la regla del documento al dato de la pregunta (por ejemplo, compara la cifra de la pregunta con la del
+  documento). La primera oración y la última tienen que decir lo mismo: nunca empieces con "Sí" para terminar en
+  "no conviene" o "no se justifica", ni al revés.
 - Que la conclusión no esté escrita tal cual NO es motivo para responder {SIN_EVIDENCIA}. Responde exactamente
   {SIN_EVIDENCIA} solo si ningún concepto de los documentos sirve para razonar la pregunta.
 - Máximo 100 palabras.

@@ -219,3 +219,10 @@ def test_el_prompt_de_razonamiento_no_deja_suponer_condiciones_que_la_pregunta_n
     assert "siempre que" in RAZONAMIENTO
     # Después la agregaba siempre ("Siempre que el análisis de costo-beneficio no considere…"): solo si hay una.
     assert "si no hay ninguno, no agregues condiciones" in RAZONAMIENTO
+
+
+def test_el_prompt_de_razonamiento_pide_que_el_si_o_no_coincida_con_la_conclusion():
+    # Demo 10/11/2026: "¿Conviene usar costeo ABC si los costos indirectos son solo el 10 % del total?" → "Sí,
+    # conviene usar costeo ABC. … por lo que no se justifica el uso del costeo ABC en este caso."
+    assert '"¿conviene…?"' in RAZONAMIENTO
+    assert "La primera oración y la última tienen que decir lo mismo" in RAZONAMIENTO
