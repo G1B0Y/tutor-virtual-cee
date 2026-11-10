@@ -88,13 +88,13 @@ docker compose exec api python -m app.ingesta corpus /corpus/complementario
 
 Cada página dice **MATERIAL DE PRUEBA – no es material oficial ni validado por el CEE**. Se puede cargar junto con `corpus/prueba` (los títulos terminan en "(material complementario)" y no chocan). Cuando llegue el material del CEE se retira con `retirar` (arriba). El benchmark sigue usando solo `corpus/prueba`. Los textos están en `corpus/complementario/fuentes/*.md`; si se corrige uno, se regeneran los PDF con `python scripts/generar_corpus_complementario.py` y se vuelve a cargar la carpeta (entran como versión nueva).
 
-#### Curso Sistemas Integrados Empresariales (Marketing, Ventas y CRM)
+#### Curso Sistemas Integrados Empresariales (los 14 módulos)
 
-`corpus/sie/` tiene la teoría de 3 módulos del curso (los PDF originales, sin cambios), para que el ingeniero y el profesor le pregunten al tutor:
+`corpus/sie/` tiene la teoría de Marketing, Ventas y CRM (los 3 PDF originales, sin cambios) y los apuntes de los 14 módulos del curso (`sie_apuntes_*.pdf`, generados desde `corpus/sie/fuentes/*.md` con `python scripts/generar_apuntes_sie.py`), para que el ingeniero y el profesor le pregunten al tutor:
 
 ```bash
 docker compose exec api python -m app.ingesta corpus /corpus/sie
-docker compose exec api python -m app.ingesta estado      # deben aparecer los 3 módulos
+docker compose exec api python -m app.ingesta estado      # deben aparecer los 18 documentos del curso
 ```
 
 El curso tiene más módulos: para agregar uno, copiar el PDF a `corpus/sie/`, sumarlo a `corpus/sie/corpus.json` (mismo `curso`) y volver a correr el primer comando (los que no cambiaron se saltan).

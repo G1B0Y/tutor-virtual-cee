@@ -32,11 +32,11 @@ def test_los_3_modulos_se_cargan_junto_a_los_otros_corpus(db):
     cargar_corpus(db, emb, CORPUS / "prueba")
     antes = int(estado(db)[0].split(": ")[1])
     mensajes = cargar_corpus(db, emb, CORPUS / "sie")
-    assert len(mensajes) == 3 and all("versión 1 cargada" in m for m in mensajes)
-    assert estado(db)[0] == f"Documentos vigentes: {antes + 3}"
+    assert len(mensajes) == 18 and all("versión 1 cargada" in m for m in mensajes)
+    assert estado(db)[0] == f"Documentos vigentes: {antes + 18}"
     por_curso = db.execute("SELECT count(*) FROM fragmentos_vigentes WHERE curso = 'Sistemas Integrados Empresariales'"
                            ).fetchone()[0]
-    assert 25 <= por_curso <= 50  # 12 páginas; con una palabra por línea (el error) salían otros cortes
+    assert 110 <= por_curso <= 160  # 3 módulos originales (~35) + apuntes de los 14 módulos (~94)
     # Cargarlos otra vez no duplica nada.
     assert all("sin cambios" in m for m in cargar_corpus(db, emb, CORPUS / "sie"))
 
@@ -72,7 +72,7 @@ def test_las_cuatro_funciones_del_crm_llegan_completas_al_modelo(db):
     pregunta = "¿Cuáles son las cuatro funciones del CRM?"
     vector = emb.codificar([pregunta], es_consulta=True)[0]
     titulo = next(t for (t,) in db.execute("SELECT DISTINCT titulo FROM fragmentos_vigentes").fetchall()
-                  if "CRM" in t)
+                  if "CRM: gestión" in t)
     primero = next(f for f in buscar_fragmentos(db, vector, 50, titulo, pregunta, 2.0)
                    if "A continuación, se detallan" in f.texto)
     juntos = _con_lista_pedida(db, vector, pregunta, [primero], CONFIG.fragmentos_lista)
@@ -117,9 +117,11 @@ def test_que_modulos_veremos_en_el_curso_lista_los_documentos_cargados(db):
     r = responder("¿Qué módulos veremos en el curso de Sistemas integrados?", db, emb, llm, Turno(3), CONFIG)
     assert r.estado == RESPONDIDA and not llm.llamadas  # sin modelo
     assert "Sistemas Integrados Empresariales" in r.respuesta
-    for modulo in ("Módulo de Marketing", "Módulo de Ventas", "Módulo de CRM"):
-        assert f"- {modulo}" in r.respuesta
-    assert len(r.fuentes) == 3 and "todavía no están cargados" in r.respuesta
+    for modulo in ("Módulo de Marketing", "Módulo de Ventas", "Módulo de CRM", "Módulo de Producción",
+                   "Módulo de Almacenes", "Módulo de Recursos Humanos", "Módulo de Finanzas"):
+        assert r.respuesta.count(f"- {modulo}\n") == 1  # una vez, aunque el módulo tenga dos documentos
+    assert r.respuesta.count("\n- ") == 15  # 14 módulos y la visión general
+    assert len(r.fuentes) == 15 and "todavía no están cargados" in r.respuesta
     # Un curso con temario sigue el camino normal (lo responde su temario, con el modelo).
     from app.catalogo import materiales_del_curso
     assert materiales_del_curso(db, "¿Qué temas veremos en el curso de Lean Six Sigma Green Belt?") is None

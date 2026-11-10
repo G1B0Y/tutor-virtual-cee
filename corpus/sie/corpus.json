@@ -1,5 +1,5 @@
 {
-  "descripcion": "Curso Sistemas Integrados Empresariales: teoría de los módulos de Marketing, Ventas y CRM, entregada por el equipo (Anyela, 09/11/2026) para que el ingeniero valide las respuestas. El curso tiene más módulos; por ahora se cargan estos 3. Los PDF son los originales (exportados de Google Docs), sin cambios.",
+  "descripcion": "Curso Sistemas Integrados Empresariales. Los 3 primeros PDF son la teoría de Marketing, Ventas y CRM entregada por el equipo el 09/11/2026 (originales de Google Docs). Los 'sie_apuntes_*' salen del recopilado de apuntes de todo el curso (14 módulos) entregado el 10/11/2026: se generan con scripts/generar_apuntes_sie.py desde fuentes/*.md.",
   "documentos": [
     {
       "archivo": "sie_marketing.pdf",
@@ -16,6 +16,96 @@
     {
       "archivo": "sie_crm.pdf",
       "titulo": "Sistemas Integrados Empresariales – Módulo de CRM: gestión, post-venta y fidelización",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_01_marketing.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Marketing: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_02_ventas.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Ventas: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_03_crm.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de CRM: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_04_produccion.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Producción: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_05_calidad.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Calidad: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_06_mantenimiento.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Mantenimiento: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_07_compras.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Compras: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_08_almacenes.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Almacenes: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_09_empaquetado.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Empaquetado (Packing): apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_10_distribucion.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Distribución: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_11_recursos_humanos.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Recursos Humanos: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_12_contabilidad.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Contabilidad: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_13_costos.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Costos: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_14_finanzas.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Módulo de Finanzas: apuntes de clase",
+      "curso": "Sistemas Integrados Empresariales",
+      "tipo": "separata"
+    },
+    {
+      "archivo": "sie_apuntes_00_vision_general.pdf",
+      "titulo": "Sistemas Integrados Empresariales – Visión general del curso: módulos y cómo se relacionan",
       "curso": "Sistemas Integrados Empresariales",
       "tipo": "separata"
     }

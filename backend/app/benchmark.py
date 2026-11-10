@@ -79,6 +79,12 @@ def cumple_claves(respuesta: str, claves: list[list[str]]) -> bool:
     return all(any(re.search(r"(?<!\w)" + re.escape(normalizar(a)), texto) for a in grupo) for grupo in claves)
 
 
+def mismo_tema(citado: str, esperado: str) -> bool:
+    """La fuente citada vale si es el documento esperado u otro del mismo módulo: el curso SIE tiene dos documentos
+    por módulo ("…Módulo de Marketing: el proceso de marketing" y "…Módulo de Marketing: apuntes de clase")."""
+    return citado == esperado or (":" in esperado and citado.split(":")[0] == esperado.split(":")[0])
+
+
 def dice_lo_prohibido(respuesta: str, frases: list[str]) -> bool:
     """La respuesta contiene una frase que la hace incorrecta aunque tenga las claves (09/11/2026: a "¿es correcto que
     el vendedor lo atienda?" granite dijo "Sí, es correcto…" y nombró al CRM, así que pasaba la clave "crm")."""
@@ -326,7 +332,7 @@ def evaluar_llm(conexion: psycopg.Connection, emb: Embeddings, llm, preguntas: d
             if grupo == "dentro":
                 fila.correcta = (r.estado in (RESPONDIDA, FAQ) and cumple_claves(r.respuesta, p["claves"])
                                  and not dice_lo_prohibido(r.respuesta, p.get("no_debe_decir", [])))
-                fila.fuente_ok = r.estado == FAQ or any(f.titulo == titulos[p["archivo"]] for f in r.fuentes)
+                fila.fuente_ok = r.estado == FAQ or any(mismo_tema(f.titulo, titulos[p["archivo"]]) for f in r.fuentes)
             else:
                 # orientacion: respuesta fija que deriva al Campus o al CEE (p. ej. "mi nota"): tampoco inventa
                 fila.correcta = r.estado in (SIN_EVIDENCIA, ORIENTACION)

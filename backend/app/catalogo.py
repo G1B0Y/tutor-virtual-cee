@@ -46,10 +46,14 @@ def materiales_del_curso(conexion: psycopg.Connection, pregunta: str) -> tuple[s
     del_curso = [f for f in filas if f[2] == curso]
     if any(f[3] == "temario" for f in del_curso):
         return None
-    titulos = [f[1] for f in del_curso]
-    cortos = [re.sub(rf"^{re.escape(curso)}\s*[–—:-]\s*", "", t) for t in titulos]
-    lista = "\n".join(f"- {t}" for t in cortos)
+    # Un módulo puede tener más de un documento ("Módulo de Marketing: el proceso…" y "…: apuntes de clase"):
+    # se nombra una vez, por lo que va antes de ":" o "(".
+    nombres: dict[str, str] = {}
+    for fila in del_curso:
+        corto = re.sub(rf"^{re.escape(curso)}\s*[–—:-]\s*", "", fila[1])
+        nombres.setdefault(re.split(r"[:(]", corto)[0].strip(), fila[1])
+    lista = "\n".join(f"- {nombre}" for nombre in nombres)
     texto = (f"Del curso {curso} tengo cargados estos materiales:\n{lista}\n"
              "El curso puede tener más contenidos que todavía no están cargados. "
              "Puedes preguntarme por cualquiera de estos.")
-    return texto, titulos
+    return texto, list(nombres.values())

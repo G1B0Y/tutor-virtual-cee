@@ -19,7 +19,10 @@ PREGUNTAS = json.loads((RAIZ / "benchmark" / "preguntas_sie.json").read_text(enc
 
 
 def test_el_curso_tiene_los_3_modulos():
-    assert [d["archivo"] for d in MANIFIESTO["documentos"]] == ["sie_marketing.pdf", "sie_ventas.pdf", "sie_crm.pdf"]
+    archivos = [d["archivo"] for d in MANIFIESTO["documentos"]]
+    assert archivos[:3] == ["sie_marketing.pdf", "sie_ventas.pdf", "sie_crm.pdf"]
+    # 10/11/2026: apuntes de los 14 módulos del curso (uno por módulo) y la visión general.
+    assert len([a for a in archivos if a.startswith("sie_apuntes_")]) == 15
     assert {d["curso"] for d in MANIFIESTO["documentos"]} == {"Sistemas Integrados Empresariales"}
 
 
@@ -177,3 +180,24 @@ def test_la_categoria_del_cliente_queda_en_el_mismo_fragmento_que_su_ejemplo():
         "Compran poco (ej. piden solo un cuarto), pero van siempre.", "Ver p. ej. la pág. 4.", "Título", "Otra."]
     con_pollo = [f.texto for f in fragmentar(extraer_paginas(CARPETA / "sie_marketing.pdf")) if "cuarto de pollo" in f.texto]
     assert con_pollo and all("Clientes Preferidos" in t for t in con_pollo)
+
+
+def test_los_apuntes_cubren_los_14_modulos_y_cada_pdf_sale_de_su_fuente():
+    # Los PDF de apuntes se generan desde fuentes/*.md (scripts/generar_apuntes_sie.py): si se edita un .md hay que
+    # regenerar su PDF. Cada módulo de los apuntes del curso tiene su documento.
+    fuentes = sorted((CARPETA / "fuentes").glob("apuntes_*.md"))
+    assert len(fuentes) == 15
+    titulos = {d["archivo"]: d["titulo"] for d in MANIFIESTO["documentos"]}
+    for fuente in fuentes:
+        pdf = CARPETA / f"sie_{fuente.stem}.pdf"
+        titulo = fuente.read_text(encoding="utf-8").splitlines()[0].removeprefix("# ").strip()
+        assert pdf.exists() and titulos[pdf.name] == titulo
+        texto = " ".join(extraer_paginas(pdf))
+        assert "Apuntes de clase del curso Sistemas Integrados Empresariales" in texto
+        assert all(len(f.texto) <= 900 for f in fragmentar(extraer_paginas(pdf)))
+    modulos = ["Marketing", "Ventas", "CRM", "Producción", "Calidad", "Mantenimiento", "Compras", "Almacenes",
+               "Empaquetado", "Distribución", "Recursos Humanos", "Contabilidad", "Costos", "Finanzas"]
+    for modulo in modulos:
+        assert any(f"Módulo de {modulo}" in t and "apuntes de clase" in t for t in titulos.values()), modulo
+    general = " ".join(extraer_paginas(CARPETA / "sie_apuntes_00_vision_general.pdf"))
+    assert "Los 14 módulos del curso son: Marketing, Ventas, CRM, Producción, Calidad, Mantenimiento" in general

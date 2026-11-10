@@ -77,3 +77,13 @@ def test_dmaic_de_granite_cuenta_como_acierto():
     d10 = next(p for p in json.loads((RAIZ / "benchmark" / "preguntas.json").read_text(encoding="utf-8"))["dentro"] if p["id"] == "D10")
     assert cumple_claves(respuesta, d10["claves"])
     assert not cumple_claves(respuesta, [["definir"], ["medir"], ["controlar"]])
+
+
+def test_la_fuente_vale_si_es_otro_documento_del_mismo_modulo():
+    from app.benchmark import mismo_tema
+
+    esperado = "Sistemas Integrados Empresariales – Módulo de Marketing: el proceso de marketing"
+    assert mismo_tema(esperado, esperado)
+    assert mismo_tema("Sistemas Integrados Empresariales – Módulo de Marketing: apuntes de clase", esperado)
+    assert not mismo_tema("Sistemas Integrados Empresariales – Módulo de Ventas: apuntes de clase", esperado)
+    assert not mismo_tema("Temario – Lean Six Sigma Green Belt (PRUEBA)", "Temario – Gestión de Proyectos con el PMBOK (PRUEBA)")
