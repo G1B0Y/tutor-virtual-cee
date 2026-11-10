@@ -60,7 +60,7 @@ Las sesiones (Claude Code en la nube y en VS Code) **no comparten el historial d
 
 ## Pendientes
 
-- [ ] Después de la demo del 10/11: anotar qué preguntó el profesor y qué falló; agregar al benchmark del curso preguntas de los módulos nuevos (Producción a Finanzas); verificar en la ficha oficial la licencia de `qwen3:4b-instruct-2507-q4_K_M`; "un cuarto de pollo" se lee como el ordinal `ord4` en la búsqueda.
+- [ ] Después de la demo del 10/11: anotar qué preguntó el profesor y qué falló; agregar al benchmark del curso preguntas de los módulos nuevos (Producción a Finanzas); verificar en la ficha oficial la licencia de `qwen3:4b-instruct-2507-q4_K_M`; "un cuarto de pollo" se lee como el ordinal `ord4` en la búsqueda. Comentarios sin pregunta ("no sé para qué te pregunté si yo sabía la respuesta") se abstienen y quedan como consulta pendiente: darles una respuesta neutra sin registrarlos. Correr el benchmark del curso con los cambios del 10/11 (regla 14, `pide_aclaracion`, cierres).
 - [ ] "Crear el curso en el campus virtual": en el tutor el curso ya existe (campo `curso` de los documentos y el campus simulado). Si Anyela se refiere al Moodle del Grupo 3, lo crea el Grupo 3 (o un administrador del Moodle) y se pega el widget; confirmar.
 - [ ] Que Alfredo pruebe en su PC la primera respuesta (README, pasos 3 a 6: `ollama pull qwen2.5:1.5b`, `python -m app.ingesta corpus /corpus/prueba`, preguntar en el chat) y una PR #1 → #2 → #3.
 - [ ] Alfredo: `git pull` en `claude/primera-respuesta`, `docker compose up -d --build` y volver a probar las preguntas (sobre todo Lean Six Sigma unidad 3, horas del programa y EOQ).
