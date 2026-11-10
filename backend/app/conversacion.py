@@ -159,6 +159,29 @@ def _corregir(texto: str, vocabulario: dict[str, str]) -> str:
 _VOCABULARIO = _vocabulario([p for p, _ in _REGLAS + _DATOS_DEL_ALUMNO])
 
 
+# Comentarios de agradecimiento con otras palabras ("bueno, la verdad me ha servido de ayuda", "muy útil, gracias"):
+# sin signo de pregunta y, quitando el elogio, solo quedan palabras de relleno (demo 10/11/2026).
+_ELOGIO = re.compile(
+    r"\b(muchas |mil )?gracias\b|\bme (ha |has )?(servido|sirvio|ayudado|ayudaste|ayudo)\b"
+    r"|\b(muy|super|bastante|re) (util|utiles|bueno|buena|claro|clara|amable)\b"
+    r"|\b(buen|buena|excelente|gran|genial) (trabajo|bot|tutor|respuesta|explicacion|ayuda)\b"
+    r"|\b(me gusto|me encanto)\b|\b(util|genial|excelente|perfecto|chevere|bacan)\b|\blo maximo\b"
+)
+_RELLENO = set(
+    "bueno buena la verdad muy mucho bastante ok okey vale si tutor bot de ayuda todo por el lo me has ha te eres es "
+    "fue y que tu tus respuestas respuesta explicacion bien super listo pues oye amigo profe en serio un una".split()
+)
+
+
+def _es_comentario(pregunta: str) -> bool:
+    if "?" in pregunta:
+        return False
+    texto = _normalizar(pregunta)
+    if not _ELOGIO.search(texto) or len(texto.split()) > 15:
+        return False
+    return all(p in _RELLENO for p in _ELOGIO.sub(" ", texto).split())
+
+
 def respuesta_de_conversacion(pregunta: str) -> str | None:
     """Texto fijo para saludos, gracias, despedidas, preguntas sobre el tutor o sobre datos del alumno."""
     texto = _corregir(_normalizar(pregunta), _VOCABULARIO)
@@ -168,4 +191,6 @@ def respuesta_de_conversacion(pregunta: str) -> str | None:
     for patron, respuesta in _DATOS_DEL_ALUMNO:
         if patron.search(texto):
             return respuesta
+    if _es_comentario(pregunta):
+        return GRACIAS
     return None
