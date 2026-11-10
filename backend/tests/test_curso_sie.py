@@ -217,3 +217,5 @@ def test_el_prompt_de_razonamiento_no_deja_suponer_condiciones_que_la_pregunta_n
     # atenderlos?" → "No, no podría…", suponiendo que el planificador ya había comprometido los recursos.
     assert "no supongas condiciones que no dice" in RAZONAMIENTO
     assert "siempre que" in RAZONAMIENTO
+    # Después la agregaba siempre ("Siempre que el análisis de costo-beneficio no considere…"): solo si hay una.
+    assert "si no hay ninguno, no agregues condiciones" in RAZONAMIENTO
