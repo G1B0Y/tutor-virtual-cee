@@ -166,3 +166,14 @@ def test_el_benchmark_no_da_por_buena_una_conclusion_al_reves():
     assert cumple_claves(al_reves, r12["claves"]) and dice_lo_prohibido(al_reves, r12["no_debe_decir"])
     bien = "No, no es correcto. Según el módulo de CRM, después de la venta el cliente debe ser atendido por el CRM."
     assert cumple_claves(bien, r12["claves"]) and not dice_lo_prohibido(bien, r12["no_debe_decir"])
+
+
+def test_la_categoria_del_cliente_queda_en_el_mismo_fragmento_que_su_ejemplo():
+    # R03 (10/11/2026): "3. Clientes Preferidos…: Compran / poco (ej. / piden solo un cuarto de pollo…" se partía por
+    # el salto de línea y por el punto de "ej."; granite y qwen3 respondían con otra categoría.
+    from app.rag.fragmentar import _oraciones, extraer_paginas, fragmentar
+
+    assert _oraciones("Compran\npoco (ej. piden solo un cuarto), pero van siempre. Ver p. ej. la pág. 4.\nTítulo\nOtra.") == [
+        "Compran poco (ej. piden solo un cuarto), pero van siempre.", "Ver p. ej. la pág. 4.", "Título", "Otra."]
+    con_pollo = [f.texto for f in fragmentar(extraer_paginas(CARPETA / "sie_marketing.pdf")) if "cuarto de pollo" in f.texto]
+    assert con_pollo and all("Clientes Preferidos" in t for t in con_pollo)

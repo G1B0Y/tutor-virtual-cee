@@ -96,3 +96,5 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - Pendiente: benchmark del curso con granite y qwen3 instruct, y elegir el modelo de la demo.
 
 - Con `qwen3:4b-instruct-2507-q4_K_M` el diagnóstico volvió a dar ReadTimeout en la primera carga. Ahora `app.diagnostico` carga el modelo antes (`cargar_y_generar`, plazo de carga propio) y recién después genera. El chat no lo necesita: la API precarga `LLM_MODELO` al arrancar.
+- Benchmark del curso SIE con los dos modelos (informe `2026-11-10_0633`): granite 19/22 y 10/10 (20,9 s, 1,9 GB); qwen3 instruct 21/22 y 10/10 (24,3 s, 3,0 GB). Decisión de Alfredo: se mantienen los dos; la demo del 11/11 con qwen3 instruct desde su laptop; granite sigue por defecto (cabe en el CEE).
+- R03 (cliente del cuarto de pollo) fallaba en los dos modelos: la fragmentación cortaba en el salto de línea y en "ej.", y el ejemplo quedaba lejos de "Clientes Preferidos". `_oraciones` ya no corta ahí (prueba nueva). Pendiente: recargar el curso en la PC de la demo y repetir R03.

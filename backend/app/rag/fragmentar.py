@@ -43,8 +43,35 @@ def limpiar(texto: str) -> str:
     return "\n".join(linea for linea in lineas if linea)
 
 
-def _oraciones(texto: str) -> list[str]:
-    return [o.strip() for o in re.split(r"(?<=[.!?:])\s+|\n", texto) if o.strip()]
+_ABREVIATURA = re.compile(r"(?:^|[\s(])(?:ej|p|etc|art|n|núm|pág|págs|vs|aprox|sr|sra|dr|dra|ing)\.$", re.IGNORECASE)
+
+
+_FIN = (".", "!", "?", ":", "»", '"', ")")
+
+
+def _oraciones(texto: str, largo_maximo: int = 400) -> list[str]:
+    """Parte en oraciones. Dos cuidados (módulo de Marketing del curso SIE, R03, 10/11/2026: "3. Clientes
+    Preferidos…: Compran / poco (ej. / piden solo un cuarto de pollo…" quedaba en otro fragmento que el nombre de
+    su categoría y los modelos la confundían):
+    - un salto de línea en medio de una oración (la línea no termina en puntuación) no la corta, salvo que la
+      oración ya pase de `largo_maximo` (tablas y listas sin puntos);
+    - un punto de abreviatura ("ej.", "p. ej.", "etc.") seguido de minúscula o número tampoco."""
+    oraciones: list[str] = []
+    abierta = False  # la oración anterior quedó sin terminar (fin de línea o abreviatura)
+    for linea in texto.split("\n"):
+        for trozo in re.split(r"(?<=[.!?:])\s+", linea):
+            trozo = trozo.strip()
+            if not trozo:
+                continue
+            sigue = trozo[0].islower() or trozo[0].isdigit()
+            if abierta and sigue and len(oraciones[-1]) + len(trozo) < largo_maximo:
+                oraciones[-1] += " " + trozo
+            else:
+                oraciones.append(trozo)
+            abierta = bool(_ABREVIATURA.search(oraciones[-1]))
+        if oraciones and not oraciones[-1].endswith(_FIN):
+            abierta = True
+    return oraciones
 
 
 def fragmentar(paginas: list[str], max_caracteres: int = 900, solape: int = 1) -> list[Fragmento]:
