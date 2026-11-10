@@ -207,5 +207,6 @@ def test_pull_sin_stock_queda_con_la_orden_de_trabajo_y_pcp_en_un_fragmento():
     # Demo 10/11/2026: "Si una carpintería de muebles a medida recibe un pedido y no tiene stock…" acertaba Pull pero no
     # nombraba la orden de trabajo ni PcP (estaban en otras secciones) y rellenaba con Ventas y CRM.
     fragmentos = fragmentar(extraer_paginas(CARPETA / "sie_apuntes_04_produccion.pdf"))
+    # Segunda prueba: con la oración antes de la viñeta híbrida (Dell), el modelo respondió "híbrida Push-Pull".
     juntos = [f.texto for f in fragmentos if "Pull" in f.texto and "orden de trabajo" in f.texto and "PcP" in f.texto]
-    assert juntos
+    assert juntos and all("muebles a medida" in t and "híbrida" not in t for t in juntos)
