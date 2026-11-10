@@ -115,3 +115,14 @@ def test_modelo_no_descargado(ollama):
     OllamaFalso.modo = "sin_modelo"
     with pytest.raises(ErrorLLM, match="no está descargado"):
         LLMOllama(ollama, "granite3.3:2b", timeout=5).generar(MENSAJES)
+
+
+
+def test_el_pensamiento_de_qwen3_no_llega_a_la_respuesta():
+    from app.rag.llm import sin_pensamiento
+
+    assert sin_pensamiento("<think>\nEl usuario pregunta por el CRM...\n</think>\n\nDebe atenderlo el CRM.") == \
+        "Debe atenderlo el CRM."
+    assert sin_pensamiento("<think></think>No, no es correcto.") == "No, no es correcto."
+    assert sin_pensamiento("<think>Okay, let me think about") == ""  # cortado por el tope
+    assert sin_pensamiento("Debe atenderlo el CRM.") == "Debe atenderlo el CRM."

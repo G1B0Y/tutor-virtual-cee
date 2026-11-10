@@ -89,7 +89,7 @@ class LLMOllama:
             "ms_llm": int((fin - inicio) * 1000),
             "tokens": final.get("eval_count", 0),
         }
-        texto = "".join(partes).strip()
+        texto = sin_pensamiento("".join(partes))
         if final.get("done_reason") == "length":
             # Llegó al tope. Si es un bucle se descarta; si es una respuesta larga (granite razonando sobre el CRM y el
             # marketing, 09/11/2026), se queda hasta la última oración completa y el control de respaldo la revisa.
@@ -122,3 +122,14 @@ def recortar_al_tope(texto: str, minimo: int = 40) -> str | None:
         return None
     recortado = texto[: finales[-1].end()].strip()
     return recortado if len(recortado) >= minimo else None
+
+
+_PENSAMIENTO = re.compile(r"<think>.*?(</think>|$)", re.DOTALL | re.IGNORECASE)
+
+
+def sin_pensamiento(texto: str) -> str:
+    """qwen3 puede escribir su razonamiento entre <think> y </think> dentro de la respuesta (según la versión de
+    Ollama, aunque se le pida no pensar). El control de respaldo lo tomaba como la primera oración y descartaba
+    respuestas buenas (benchmark del curso SIE, 09/11/2026). Un <think> sin cerrar (cortado por el tope) se quita
+    entero."""
+    return _PENSAMIENTO.sub("", texto).strip()
