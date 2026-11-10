@@ -22,6 +22,7 @@ Un **cuello de botella** es una restricción que limita el flujo continuo de la 
 Existen dos estrategias de producción principales: Push (empujar) y Pull (jalar).
 - **Estrategia Push (empujar):** la empresa produce basándose en pronósticos y "empuja" el producto hacia el mercado. El flujo va del proveedor a la producción, al almacén de productos terminados, a la distribución y finalmente al cliente. Es adecuada para productos de consumo masivo, como los chocolates, donde la demanda es constante.
 - **Estrategia Pull (jalar):** la producción se inicia a partir del pedido de un cliente. El cliente acude al punto de venta, que solicita el producto a distribución, lo que desencadena la producción y la compra de materias primas. Es ideal para productos personalizados, como muebles a medida.
+En resumen, cuando una empresa que trabaja con Pull recibe un pedido y no tiene stock, la orden de pedido se convierte en una orden de trabajo (OT), que va al área de Planificación y Control de la Producción (PcP).
 - **Estrategia híbrida Push-Pull:** algunas empresas, como Dell, "empujan" los componentes hasta la línea de ensamblaje y luego los "jalan" para el montaje final cuando un cliente realiza un pedido personalizado.
 
 ## 6. Indicadores de desempeño (KPIs) de producción

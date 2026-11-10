@@ -201,3 +201,11 @@ def test_los_apuntes_cubren_los_14_modulos_y_cada_pdf_sale_de_su_fuente():
         assert any(f"Módulo de {modulo}" in t and "apuntes de clase" in t for t in titulos.values()), modulo
     general = " ".join(extraer_paginas(CARPETA / "sie_apuntes_00_vision_general.pdf"))
     assert "Los 14 módulos del curso son: Marketing, Ventas, CRM, Producción, Calidad, Mantenimiento" in general
+
+
+def test_pull_sin_stock_queda_con_la_orden_de_trabajo_y_pcp_en_un_fragmento():
+    # Demo 10/11/2026: "Si una carpintería de muebles a medida recibe un pedido y no tiene stock…" acertaba Pull pero no
+    # nombraba la orden de trabajo ni PcP (estaban en otras secciones) y rellenaba con Ventas y CRM.
+    fragmentos = fragmentar(extraer_paginas(CARPETA / "sie_apuntes_04_produccion.pdf"))
+    juntos = [f.texto for f in fragmentos if "Pull" in f.texto and "orden de trabajo" in f.texto and "PcP" in f.texto]
+    assert juntos
