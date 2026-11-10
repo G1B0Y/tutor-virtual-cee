@@ -51,12 +51,19 @@ _AYUDA = (
 )
 _GRACIAS = r"((ok|okey|vale|listo|perfecto|genial|excelente|super) )?(muchas |mil )?gracias( (por todo|por la ayuda))?"
 _DESPEDIDA = r"(chau|chao|adios|hasta luego|hasta pronto|nos vemos|bye)"
+# Cierres de la conversación (demo 10/11/2026: "gracias, ya no te necesito" quedó como consulta pendiente).
+_CIERRE = (r"(ya no te necesito|ya no necesito nada( mas)?|no necesito nada mas|eso (es|seria|era) todo|es todo"
+           r"|nada mas|ya (esta|entendi|quedo claro)|entendido|me (sirvio|ayudaste)( mucho)?|de acuerdo)")
+_OK = r"(ok|okey|vale|listo|perfecto|genial|excelente|super|bien)"
 
 _REGLAS = [
     (re.compile(rf"({_SALUDO} )?({_TUTOR} )?{_AYUDA}( {_TUTOR})?"), PRESENTACION),
     (re.compile(rf"{_SALUDO}( {_SALUDO})?( {_TUTOR})?"), PRESENTACION),
     (re.compile(rf"{_GRACIAS}( {_TUTOR})?"), GRACIAS),
     (re.compile(rf"({_GRACIAS} )?{_DESPEDIDA}( {_TUTOR})?"), DESPEDIDA),
+    # "gracias ya no te necesito", "eso es todo gracias chau", "entendido gracias": solo piezas de cierre.
+    (re.compile(rf"(({_GRACIAS}|{_DESPEDIDA}|{_TUTOR}|{_OK}) )*{_CIERRE}( ({_GRACIAS}|{_CIERRE}|{_DESPEDIDA}|{_TUTOR}))*"),
+     DESPEDIDA),
 ]
 
 
