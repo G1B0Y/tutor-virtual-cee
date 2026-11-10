@@ -9,6 +9,7 @@ from dataclasses import dataclass, field, replace
 import psycopg
 
 from app.config import Configuracion
+from app.catalogo import materiales_del_curso
 from app.conversacion import respuesta_de_conversacion
 from app.rag.busqueda import (FragmentoEncontrado, buscar_faq, buscar_fragmentos, fragmentos_que_dicen,
                                siguiente_fragmento, terminos)
@@ -230,6 +231,11 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     fija = respuesta_de_conversacion(pregunta)
     if fija:
         return terminar(Respuesta(ORIENTACION, fija))
+
+    # "¿Qué módulos veremos en el curso X?" cuando X no tiene temario: los documentos cargados de ese curso.
+    materiales = materiales_del_curso(conexion, pregunta)
+    if materiales:
+        return terminar(Respuesta(RESPONDIDA, materiales[0], [Fuente(t, None) for t in materiales[1]]))
 
     vector = emb.codificar([texto_para_buscar(pregunta)], es_consulta=True)[0]
 

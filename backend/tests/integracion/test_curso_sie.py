@@ -105,3 +105,23 @@ def test_con_razonamiento_el_segundo_intento_lleva_su_aviso(db):
                   db, emb, llm, Turno(3), config)
     assert len(llm.llamadas) == 2 and llm.llamadas[1][-1]["content"].endswith(REINTENTO_RAZONAMIENTO)
     assert r.estado == RESPONDIDA
+
+
+def test_que_modulos_veremos_en_el_curso_lista_los_documentos_cargados(db):
+    # Demo del 10/11/2026: "¿Qué módulos veremos en el curso de Sistemas integrados?" → "no encontré…, lo más
+    # cercano: Temario – Gestión de la Cadena de Suministro". El curso no tiene temario: se listan sus documentos.
+    emb = EmbeddingsHash()
+    cargar_corpus(db, emb, CORPUS / "prueba")
+    cargar_corpus(db, emb, CORPUS / "sie")
+    llm = LLMQueCopia()
+    r = responder("¿Qué módulos veremos en el curso de Sistemas integrados?", db, emb, llm, Turno(3), CONFIG)
+    assert r.estado == RESPONDIDA and not llm.llamadas  # sin modelo
+    assert "Sistemas Integrados Empresariales" in r.respuesta
+    for modulo in ("Módulo de Marketing", "Módulo de Ventas", "Módulo de CRM"):
+        assert f"- {modulo}" in r.respuesta
+    assert len(r.fuentes) == 3 and "todavía no están cargados" in r.respuesta
+    # Un curso con temario sigue el camino normal (lo responde su temario, con el modelo).
+    from app.catalogo import materiales_del_curso
+    assert materiales_del_curso(db, "¿Qué temas veremos en el curso de Lean Six Sigma Green Belt?") is None
+    assert materiales_del_curso(db, "¿Cuáles son las 4 funciones del CRM?") is None
+    assert materiales_del_curso(db, "¿Qué es el marketing en Sistemas Integrados Empresariales?") is None
