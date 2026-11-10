@@ -256,6 +256,12 @@ def test_texto_para_buscar_lleva_tema_uno_a_unidad_1():
     ("ESTOY LLEVANDO ESE CURSO, DAME UN RESUMEN DEL TEMA UNO", True),
     ("¿y el tema dos?", True), ("explícame eso", True), ("¿qué evalúa este curso?", True),
     ("¿Cómo se calcula el inventario de seguridad?", False), ("¿Qué está incluido en el temario de Lean?", False),
+    # Demo 10/11/2026: se buscó solo en el documento de la respuesta anterior (Recursos Humanos) y se abstuvo.
+    ("Si una caja lleva talcos y colonias para un mismo cliente, ¿qué código debería ir en la etiqueta?", False),
+    ("¿y lo mismo pasa en Ventas?", True), ("¿en el mismo módulo hay algo más?", True),
+    ("Si una carpintería que hace muebles a medida recibe un pedido y no tiene stock, ¿qué pasa con ese pedido y qué "
+     "estrategia de producción está usando?", False),
+    ("¿qué pasa con ese pedido?", True),
 ])
 def test_es_seguimiento(pregunta, esperado):
     from app.consulta import es_seguimiento

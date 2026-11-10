@@ -99,7 +99,8 @@ def texto_para_buscar(texto: str) -> str:
 
 
 _SEGUIMIENTO = re.compile(
-    r"\b(ese|esa|eso|esos|esas|aquel|aquella|dicho|dicha|mismo|misma)\b"
+    r"\b(ese|esa|eso|esos|esas|aquel|aquella|dicho|dicha)\b"
+    r"|(?<!\bun )(?<!\buna )\b(mismo|misma)\b"  # "para un mismo cliente" no remite a la pregunta anterior
     r"|\b(este|esta|estos|estas) (curso|cursos|programa|tema|temas|modulo|unidad|separata|temario|documento)\b"
     r"|^(y|e|entonces|osea|o sea)\b"
 )
@@ -110,7 +111,15 @@ def es_seguimiento(pregunta: str) -> bool:
     """La pregunta depende de la anterior: "ese curso", "¿y el tema dos?", "explícame eso"."""
     from app.conversacion import _normalizar
 
-    return bool(_SEGUIMIENTO.search(_normalizar(pregunta)))
+    texto = _normalizar(pregunta)
+    for m in _SEGUIMIENTO.finditer(texto):
+        # "recibe un pedido y no tiene stock, ¿qué pasa con ese pedido?": el sustantivo ya está antes en la misma
+        # pregunta, así que "ese" no remite a la anterior (demo 10/11/2026).
+        sustantivo = re.match(r"\s+(\w+)", texto[m.end():])
+        if m.group(1) and sustantivo and re.search(rf"\b{sustantivo[1]}\b", texto[:m.start()]):
+            continue
+        return True
+    return False
 
 
 def seleccionar(encontrados: list[FragmentoEncontrado], umbral: float, margen: float) -> list[FragmentoEncontrado]:
