@@ -32,6 +32,7 @@ def main(argumentos: list[str] | None = None) -> int:
     parser.add_argument("pregunta")
     parser.add_argument("--sin-llm", action="store_true", help="Solo la búsqueda, sin llamar al modelo")
     parser.add_argument("--candidatos", type=int, default=10, help="Cuántos fragmentos mostrar")
+    parser.add_argument("--llm", help="Otro modelo de Ollama en vez de LLM_MODELO (p. ej. qwen3:4b)")
     args = parser.parse_args(argumentos)
 
     config = obtener_configuracion()
@@ -64,7 +65,8 @@ def main(argumentos: list[str] | None = None) -> int:
         if args.sin_llm or not elegidos:
             return 0
 
-        llm = LLMOllama(config.ollama_url, config.llm_modelo, config.timeout_llm, config.max_tokens_respuesta)
+        llm = LLMOllama(config.ollama_url, args.llm or config.llm_modelo, config.timeout_llm,
+                        config.max_tokens_respuesta)
         try:
             texto = llm.generar(armar_mensajes(args.pregunta, elegidos, None))
         except ErrorLLM as error:
