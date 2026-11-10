@@ -1,6 +1,7 @@
 """Acceso al modelo de lenguaje detrás de una interfaz (RF-31: cambiar de modelo o motor sin reescribir)."""
 
 import json
+import re
 import time
 from typing import Protocol
 
@@ -40,6 +41,11 @@ class LLMOllama:
         except httpx.HTTPError:
             return False
 
+    def _sin_pensar(self) -> dict:
+        """qwen3 "piensa" antes de responder si no se le dice lo contrario: en CPU tarda el doble y el pensamiento
+        gasta el tope de tokens. A los demás modelos no se les manda nada (algunos rechazan el campo)."""
+        return {"think": False} if self.nombre.startswith("qwen3") else {}
+
     def generar(self, mensajes: list[dict[str, str]]) -> str:
         inicio = time.monotonic()
         primer_token = None
@@ -54,6 +60,7 @@ class LLMOllama:
                     "stream": True,
                     # Respuestas sobrias, cortas y con contexto acotado para caber en el equipo del CEE (RNF-M03).
                     "options": {"temperature": 0.1, "num_ctx": 4096, "num_predict": self.max_tokens},
+                    **self._sin_pensar(),
                 },
                 timeout=self.timeout,
             ) as respuesta:
@@ -82,7 +89,36 @@ class LLMOllama:
             "ms_llm": int((fin - inicio) * 1000),
             "tokens": final.get("eval_count", 0),
         }
+        texto = "".join(partes).strip()
         if final.get("done_reason") == "length":
-            # Llegó al tope: una respuesta del tutor nunca es tan larga, lo más probable es un bucle.
-            raise ErrorLLM(f"La respuesta llegó al tope de {self.max_tokens} tokens (posible bucle) y se descartó")
-        return "".join(partes).strip()
+            # Llegó al tope. Si es un bucle se descarta; si es una respuesta larga (granite razonando sobre el CRM y el
+            # marketing, 09/11/2026), se queda hasta la última oración completa y el control de respaldo la revisa.
+            recortado = recortar_al_tope(texto)
+            if recortado is None:
+                raise ErrorLLM(f"La respuesta llegó al tope de {self.max_tokens} tokens (posible bucle) y se descartó")
+            return recortado
+        return texto
+
+
+_FIN_DE_ORACION = re.compile(r"[.!?»\"](?=\s|$)")
+
+
+def es_bucle(texto: str) -> bool:
+    """Una oración (de más de 20 caracteres) repetida 3 veces o más, o muy pocas palabras distintas al final."""
+    oraciones = [" ".join(o.lower().split()) for o in re.split(r"(?<=[.!?])\s+", texto) if len(o.strip()) > 20]
+    if any(oraciones.count(o) >= 3 for o in set(oraciones)):
+        return True
+    palabras = texto.lower().split()[-200:]
+    return len(palabras) >= 60 and len(set(palabras)) / len(palabras) < 0.25
+
+
+def recortar_al_tope(texto: str, minimo: int = 40) -> str | None:
+    """Una respuesta cortada por el tope de tokens: hasta su última oración completa. None si es un bucle o si
+    no queda ni una oración completa."""
+    if es_bucle(texto):
+        return None
+    finales = list(_FIN_DE_ORACION.finditer(texto))
+    if not finales:
+        return None
+    recortado = texto[: finales[-1].end()].strip()
+    return recortado if len(recortado) >= minimo else None

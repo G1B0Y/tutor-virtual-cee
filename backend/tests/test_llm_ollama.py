@@ -41,9 +41,15 @@ class OllamaFalso(BaseHTTPRequestHandler):
                 while True:
                     self._linea({"message": {"content": "bla "}, "done": False})
                     time.sleep(0.02)
-            for palabra in ["La nota ", "mínima ", "es 14."]:
+            palabras = ["La nota ", "mínima ", "es 14."]
+            if self.modo == "tope_largo":  # respuesta buena pero larga, cortada a media oración
+                palabras = ["Debe atenderlo el CRM, no el vendedor. ", "Según el módulo de CRM, el cliente se comunica ",
+                            "con un área que conoce el producto. Por lo tanto, en este caso el"]
+            if self.modo == "tope_bucle":
+                palabras = ["El CRM registra el reclamo del cliente. "] * 10
+            for palabra in palabras:
                 self._linea({"message": {"content": palabra}, "done": False})
-            motivo = "length" if self.modo == "tope" else "stop"
+            motivo = "length" if self.modo.startswith("tope") else "stop"
             self._linea({"message": {"content": ""}, "done": True, "done_reason": motivo, "eval_count": 3})
         except (BrokenPipeError, ConnectionResetError):
             pass  # el cliente cortó
@@ -69,10 +75,32 @@ def test_respuesta_normal_pide_tope_de_tokens_y_mide_tiempos(ollama):
     assert llm.ultima["tokens"] == 3 and llm.ultima["ttft_ms"] <= llm.ultima["ms_llm"]
 
 
-def test_respuesta_que_llega_al_tope_se_descarta(ollama):
-    OllamaFalso.modo = "tope"
+def test_respuesta_que_llega_al_tope_sin_oracion_util_se_descarta(ollama):
+    OllamaFalso.modo = "tope"  # "La nota mínima es 14." es muy corta para quedarse sola
     with pytest.raises(ErrorLLM, match="tope"):
         LLMOllama(ollama, "qwen2.5:1.5b", timeout=10).generar(MENSAJES)
+
+
+def test_un_bucle_que_llega_al_tope_se_descarta(ollama):
+    OllamaFalso.modo = "tope_bucle"
+    with pytest.raises(ErrorLLM, match="bucle"):
+        LLMOllama(ollama, "granite3.3:2b", timeout=10).generar(MENSAJES)
+
+
+def test_una_respuesta_larga_que_llega_al_tope_se_corta_en_la_ultima_oracion(ollama):
+    # Benchmark del curso SIE (09/11/2026): R08 y R09 llegaban al tope razonando y el alumno veía sin_llm.
+    OllamaFalso.modo = "tope_largo"
+    texto = LLMOllama(ollama, "granite3.3:2b", timeout=10).generar(MENSAJES)
+    assert texto == ("Debe atenderlo el CRM, no el vendedor. Según el módulo de CRM, el cliente se comunica con un área "
+                     "que conoce el producto.")
+
+
+def test_a_qwen3_se_le_pide_no_pensar_y_a_los_demas_no_se_les_manda_nada(ollama):
+    OllamaFalso.modo = "normal"
+    LLMOllama(ollama, "qwen3:4b", timeout=10).generar(MENSAJES)
+    assert OllamaFalso.pedido["think"] is False
+    LLMOllama(ollama, "granite3.3:2b", timeout=10).generar(MENSAJES)
+    assert "think" not in OllamaFalso.pedido
 
 
 def test_respuesta_en_bucle_se_corta_por_el_plazo_total(ollama):
