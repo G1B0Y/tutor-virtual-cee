@@ -95,3 +95,4 @@ Una entrada por sesión de trabajo, de la más reciente a la más antigua. El es
 - Cambio: probar `qwen3:4b-instruct-2507-q4_K_M` (Apache 2.0, no piensa); a los modelos "instruct" no se les manda `think`; `sin_pensamiento` quita todo lo que va antes de un `</think>` sin apertura. Prueba nueva en `test_llm_ollama.py`.
 - Pendiente: benchmark del curso con granite y qwen3 instruct, y elegir el modelo de la demo.
 
+- Con `qwen3:4b-instruct-2507-q4_K_M` el diagnóstico volvió a dar ReadTimeout en la primera carga. Ahora `app.diagnostico` carga el modelo antes (`cargar_y_generar`, plazo de carga propio) y recién después genera. El chat no lo necesita: la API precarga `LLM_MODELO` al arrancar.

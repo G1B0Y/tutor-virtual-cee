@@ -27,6 +27,15 @@ def _lugar(f) -> str:
     return f"{f.titulo[:70]}, pág. {f.pagina}"
 
 
+def cargar_y_generar(llm, mensajes) -> str:
+    """Cargar el modelo puede tardar más que TIMEOUT_LLM (qwen3:4b, ~3 min en la PC de Alfredo, 10/11/2026, y el
+    diagnóstico daba ReadTimeout): se carga antes con su propio plazo y después se genera."""
+    print(f"\nCargando {llm.nombre} (la primera vez puede tardar unos minutos)...", flush=True)
+    if not llm.precargar():
+        raise ErrorLLM(f"No se pudo cargar {llm.nombre} (¿está descargado? ¿hay RAM libre?)")
+    return llm.generar(mensajes)
+
+
 def main(argumentos: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.diagnostico", description=__doc__.splitlines()[0])
     parser.add_argument("pregunta")
@@ -68,7 +77,7 @@ def main(argumentos: list[str] | None = None) -> int:
         llm = LLMOllama(config.ollama_url, args.llm or config.llm_modelo, config.timeout_llm,
                         config.max_tokens_respuesta)
         try:
-            texto = llm.generar(armar_mensajes(args.pregunta, elegidos, None))
+            texto = cargar_y_generar(llm, armar_mensajes(args.pregunta, elegidos, None))
         except ErrorLLM as error:
             print(f"\nEl modelo no respondió: {error}")
             return 1
