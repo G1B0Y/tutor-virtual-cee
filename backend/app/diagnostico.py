@@ -32,7 +32,7 @@ def main(argumentos: list[str] | None = None) -> int:
     parser.add_argument("pregunta")
     parser.add_argument("--sin-llm", action="store_true", help="Solo la búsqueda, sin llamar al modelo")
     parser.add_argument("--candidatos", type=int, default=10, help="Cuántos fragmentos mostrar")
-    parser.add_argument("--llm", help="Otro modelo de Ollama en vez de LLM_MODELO (p. ej. qwen3:4b)")
+    parser.add_argument("--llm", help="Otro modelo de Ollama en vez de LLM_MODELO (p. ej. qwen3:4b-instruct-2507-q4_K_M)")
     args = parser.parse_args(argumentos)
 
     config = obtener_configuracion()

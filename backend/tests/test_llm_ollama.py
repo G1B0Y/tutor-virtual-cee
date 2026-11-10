@@ -101,6 +101,8 @@ def test_a_qwen3_se_le_pide_no_pensar_y_a_los_demas_no_se_les_manda_nada(ollama)
     assert OllamaFalso.pedido["think"] is False
     LLMOllama(ollama, "granite3.3:2b", timeout=10).generar(MENSAJES)
     assert "think" not in OllamaFalso.pedido
+    LLMOllama(ollama, "qwen3:4b-instruct-2507-q4_K_M", timeout=10).generar(MENSAJES)
+    assert "think" not in OllamaFalso.pedido
 
 
 def test_respuesta_en_bucle_se_corta_por_el_plazo_total(ollama):
@@ -126,3 +128,6 @@ def test_el_pensamiento_de_qwen3_no_llega_a_la_respuesta():
     assert sin_pensamiento("<think></think>No, no es correcto.") == "No, no es correcto."
     assert sin_pensamiento("<think>Okay, let me think about") == ""  # cortado por el tope
     assert sin_pensamiento("Debe atenderlo el CRM.") == "Debe atenderlo el CRM."
+    # La plantilla del modelo abrió el <think> y solo llega el cierre.
+    assert sin_pensamiento("Okay, let's see. The student asks...\n</think>\n\nEs un documento formal.") == \
+        "Es un documento formal."

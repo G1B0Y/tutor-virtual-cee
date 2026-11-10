@@ -44,7 +44,8 @@ class LLMOllama:
     def _sin_pensar(self) -> dict:
         """qwen3 "piensa" antes de responder si no se le dice lo contrario: en CPU tarda el doble y el pensamiento
         gasta el tope de tokens. A los demás modelos no se les manda nada (algunos rechazan el campo)."""
-        return {"think": False} if self.nombre.startswith("qwen3") else {}
+        # Las versiones "instruct" no piensan nunca y no necesitan el campo.
+        return {"think": False} if self.nombre.startswith("qwen3") and "instruct" not in self.nombre else {}
 
     def generar(self, mensajes: list[dict[str, str]]) -> str:
         inicio = time.monotonic()
@@ -125,11 +126,12 @@ def recortar_al_tope(texto: str, minimo: int = 40) -> str | None:
 
 
 _PENSAMIENTO = re.compile(r"<think>.*?(</think>|$)", re.DOTALL | re.IGNORECASE)
+_FIN_DE_PENSAMIENTO = re.compile(r"^.*</think>", re.DOTALL | re.IGNORECASE)
 
 
 def sin_pensamiento(texto: str) -> str:
     """qwen3 puede escribir su razonamiento entre <think> y </think> dentro de la respuesta (según la versión de
     Ollama, aunque se le pida no pensar). El control de respaldo lo tomaba como la primera oración y descartaba
     respuestas buenas (benchmark del curso SIE, 09/11/2026). Un <think> sin cerrar (cortado por el tope) se quita
-    entero."""
-    return _PENSAMIENTO.sub("", texto).strip()
+    entero. Un </think> sin apertura (la plantilla del modelo ya abrió el <think>) deja solo lo que viene después."""
+    return _FIN_DE_PENSAMIENTO.sub("", _PENSAMIENTO.sub("", texto)).strip()

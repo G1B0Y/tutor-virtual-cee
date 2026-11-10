@@ -55,6 +55,7 @@ LICENCIAS = {
     "qwen2.5:1.5b": "Apache 2.0",
     "granite3.3:2b": "Apache 2.0",
     "qwen3:4b": "Apache 2.0",
+    "qwen3:4b-instruct-2507-q4_K_M": "Apache 2.0",
     "phi4-mini": "MIT",
     "hash": "— (solo pruebas)",
 }
