@@ -210,3 +210,10 @@ def test_pull_sin_stock_queda_con_la_orden_de_trabajo_y_pcp_en_un_fragmento():
     # Segunda prueba: con la oración antes de la viñeta híbrida (Dell), el modelo respondió "híbrida Push-Pull".
     juntos = [f.texto for f in fragmentos if "Pull" in f.texto and "orden de trabajo" in f.texto and "PcP" in f.texto]
     assert juntos and all("muebles a medida" in t and "híbrida" not in t for t in juntos)
+
+
+def test_el_prompt_de_razonamiento_no_deja_suponer_condiciones_que_la_pregunta_no_da():
+    # Demo 10/11/2026: "Si una empresa opera al 50 % de su capacidad y le llega el doble de pedidos, ¿podría
+    # atenderlos?" → "No, no podría…", suponiendo que el planificador ya había comprometido los recursos.
+    assert "no supongas condiciones que no dice" in RAZONAMIENTO
+    assert "siempre que" in RAZONAMIENTO
