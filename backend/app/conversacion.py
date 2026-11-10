@@ -194,3 +194,28 @@ def respuesta_de_conversacion(pregunta: str) -> str | None:
     if _es_comentario(pregunta):
         return GRACIAS
     return None
+
+
+# "No entendí", "explícalo más simple", "resúmelo" (demo 10/11/2026): el alumno pide que se le vuelva a explicar la
+# respuesta anterior. Solo si, quitando el pedido, quedan palabras de relleno ("resume el módulo de Costos" no cuenta).
+_ACLARACION = re.compile(
+    r"\bno (te |le |lo )?(entend\w*|comprend\w*)|\bno (me )?(quedo|queda) (muy )?clar[oa]"
+    r"|\b(explica|explicalo|explicamelo|explicame|dilo|dimelo|repite|repitelo|resume|resumelo|resumemelo|resumir"
+    r"|resumirlo|simplifica|simplificalo)\b"
+    r"|\bmas (claro|clara|simple|sencillo|sencilla|facil|corto|corta|breve|conciso|concisa|directo|directa|preciso"
+    r"|resumido)\b|\b(concis[oa]|resumid[oa])\b|\ben pocas palabras\b"
+    r"|\bcon (otras )?palabras( mas)? (simples|sencillas)\b|\ben resumen\b"
+)
+_RELLENO_ACLARACION = set(
+    "puedes podrias podes me lo la el eso esto por favor porfa un poco de nuevo otra vez mas y pero no entonces ok "
+    "bueno tutor bot que dijiste respuesta tu anterior hazlo hacerlo forma manera mejor si nada bien se te otras "
+    "palabras con sencillo simple".split()
+)
+
+
+def pide_aclaracion(mensaje: str) -> bool:
+    texto = _normalizar(mensaje)
+    if not _ACLARACION.search(texto) or len(texto.split()) > 12:
+        return False
+    return all(p in _RELLENO_ACLARACION for p in _ACLARACION.sub(" ", texto).split())
+

@@ -10,7 +10,7 @@ import psycopg
 
 from app.config import Configuracion
 from app.catalogo import materiales_del_curso
-from app.conversacion import respuesta_de_conversacion
+from app.conversacion import pide_aclaracion, respuesta_de_conversacion
 from app.rag.busqueda import (FragmentoEncontrado, buscar_faq, buscar_fragmentos, fragmentos_que_dicen,
                                siguiente_fragmento, terminos)
 from app.rag.embeddings import Embeddings
@@ -223,18 +223,21 @@ def _con_lista_pedida(conexion: psycopg.Connection, vector: list[float], pregunt
     return [unido, *(f for f in utiles[1:] if (f.titulo, f.orden) not in usados)][:3]
 
 
+PEDIDO_SIMPLE = "Explícalo de nuevo de forma más simple y breve, en 2 o 3 oraciones."
+
+
 def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm: LLM, turno: Turno,
               config: Configuracion, anterior: str | None = None, documento_anterior: str | None = None) -> Respuesta:
     """Seguimientos (los manda el navegador; no se guardan): `anterior` es la pregunta previa del alumno en el mismo
     chat y `documento_anterior`, el documento de la respuesta previa. Se usan si la pregunta se refiere a algo
     anterior ("ese curso", "¿y el tema dos?") o si sola no encuentra nada."""
     inicio = time.monotonic()
-    pregunta = " ".join(pregunta.split())
+    pregunta = original = " ".join(pregunta.split())
     anterior = " ".join((anterior or "").split()) or None
 
     def terminar(r: Respuesta, modelo: str | None = None) -> Respuesta:
         r.ms = int((time.monotonic() - inicio) * 1000)
-        _registrar(conexion, r, pregunta, modelo, config)
+        _registrar(conexion, r, original, modelo, config)  # nunca la anterior (Ley 29733)
         return r
 
     fija = respuesta_de_conversacion(pregunta)
@@ -245,6 +248,10 @@ def responder(pregunta: str, conexion: psycopg.Connection, emb: Embeddings, llm:
     materiales = materiales_del_curso(conexion, pregunta)
     if materiales:
         return terminar(Respuesta(RESPONDIDA, materiales[0], [Fuente(t, None) for t in materiales[1]]))
+
+    if anterior and pide_aclaracion(pregunta) and not pide_aclaracion(anterior):
+        # "No entendí", "resúmelo" (demo 10/11/2026): se responde de nuevo la pregunta anterior, más simple.
+        pregunta, anterior = f"{anterior} {PEDIDO_SIMPLE}", None
 
     vector = emb.codificar([texto_para_buscar(pregunta)], es_consulta=True)[0]
 

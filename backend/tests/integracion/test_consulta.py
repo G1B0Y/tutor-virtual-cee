@@ -263,3 +263,23 @@ def test_lista_inventada_en_seguimiento_se_descarta(con_corpus):
                   documento_anterior="Temario – Lean Six Sigma Green Belt (PRUEBA)")
     assert r.estado == SIN_EVIDENCIA
     assert "Sobreproducción" not in r.respuesta
+
+
+def test_no_entendi_vuelve_a_responder_la_pregunta_anterior_mas_simple(con_corpus):
+    """Demo 10/11/2026: "no entendí" o "resúmelo" después de una respuesta. Se responde otra vez la pregunta
+    anterior, con el pedido de hacerlo más simple; en pendientes queda solo lo que escribió el alumno."""
+    from app.consulta import PEDIDO_SIMPLE
+
+    llm = LLMFalso()
+    r = responder("no entendí, explícalo más simple", con_corpus, EmbeddingsHash(), llm, Turno(3), CONFIG,
+                  anterior="¿Cómo se calcula el inventario de seguridad?")
+    assert r.estado == RESPONDIDA
+    usuario = llm.recibido[-1]["content"]
+    assert f"¿Cómo se calcula el inventario de seguridad? {PEDIDO_SIMPLE}" in usuario
+    assert "<pregunta_anterior>" not in usuario
+
+    estricta = CONFIG.model_copy(update={"umbral_distancia": 0.01})
+    responder("resúmelo", con_corpus, EmbeddingsHash(), LLMFalso(), Turno(3), estricta,
+              anterior="dato personal de prueba 12345")
+    guardadas = [p for (p,) in con_corpus.execute("SELECT pregunta FROM consultas_pendientes").fetchall()]
+    assert "resúmelo" in guardadas and not any("12345" in p for p in guardadas)

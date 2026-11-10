@@ -99,3 +99,17 @@ def test_tolera_faltas_de_ortografia_y_abreviaturas(mensaje, esperada):
 ])
 def test_preguntas_con_faltas_sobre_documentos_siguen_al_buscador(mensaje):
     assert respuesta_de_conversacion(mensaje) is None
+
+
+@pytest.mark.parametrize("mensaje,esperado", [
+    ("no entendí", True), ("No te entendí nada", True), ("no me quedó claro", True),
+    ("explícalo más simple", True), ("¿puedes resumirlo?", True), ("resúmelo por favor", True),
+    ("dilo con palabras más sencillas", True), ("en pocas palabras", True), ("más corto", True),
+    ("no entendí, se más conciso", True), ("sé más directo", True),  # demo 10/11: citó langostinos de Almacenes
+    ("resume el módulo de Costos", False), ("explícame la diferencia entre picking y packing", False),
+    ("no entendí qué es el kardex", False), ("¿Qué es el costeo ABC?", False),
+])
+def test_pide_aclaracion(mensaje, esperado):
+    from app.conversacion import pide_aclaracion
+
+    assert pide_aclaracion(mensaje) is esperado
