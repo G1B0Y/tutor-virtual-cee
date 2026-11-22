@@ -1,0 +1,5 @@
+node_modules
+dist
+dist-embebido
+dist-compartir
+.env

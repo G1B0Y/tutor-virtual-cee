@@ -6,6 +6,7 @@ Chatbot RAG local, en español y a costo S/ 0, integrado al Campus Virtual del C
 - Contexto: [`docs/PROYECTO_TUTOR_VIRTUAL.md`](docs/PROYECTO_TUTOR_VIRTUAL.md)
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Bitácora: [`docs/BITACORA.md`](docs/BITACORA.md)
+- Despliegue en la PC del CEE (Windows + AnyDesk): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)
 
 ## Stack
 
