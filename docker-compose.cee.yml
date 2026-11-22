@@ -19,6 +19,11 @@ services:
     ports: !reset []
     networks: !override [interna]
     mem_limit: ${MEMORIA_OLLAMA:-3g}
+    environment:
+      # Opcional si falta RAM (Moodle en la misma PC): FLASH_ATTENTION=1 + KV_CACHE_TYPE=q8_0 ahorran ~150 MB.
+      # Vacíos = valores normales de Ollama. Medir antes y después con las preguntas de la demo.
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-}
 
   api:
     environment:

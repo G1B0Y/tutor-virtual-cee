@@ -206,7 +206,8 @@ Para una reunión o una revisión del equipo. El chat y la API salen por un solo
 1. Con el tutor levantado (`docker compose up -d`, `/salud` en ok), pon `CONFIAR_EN_PROXY=true` en `.env` y aplica con
    `docker compose up -d` (así cada visitante tiene su propio límite de preguntas por minuto). Vuelve a `false` después.
 2. En `frontend`: `npm ci` (la primera vez) y `npm run compartir` (deja esa terminal abierta: sirve el chat en
-   http://127.0.0.1:4173 y pasa `/api` a la API).
+   http://127.0.0.1:4173, el widget en `/widget/tutor-cee.js` y pasa `/api` a la API). Para probar el widget en el
+   Moodle del Grupo 3, ver `docs/DESPLIEGUE.md`, sección 16.
 3. En otra terminal, una de estas:
    - **Cloudflare (sin cuenta):** `winget install --id Cloudflare.cloudflared` (una vez) y
      `cloudflared tunnel --url http://127.0.0.1:4173`. Copia el enlace `https://….trycloudflare.com` que aparece.
