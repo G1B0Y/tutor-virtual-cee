@@ -27,14 +27,17 @@ Guía para instalar y dejar funcionando el tutor en la PC del CEE (HP ProDesk 60
 ## 1. Qué se va a instalar y por qué así
 
 ```
-Alumno (PC o celular de la red del CEE, o a través del campus)
-  └─ Windows 10: puerto 8080 (firewall: solo red local) ── portproxy ──┐
-                                                                        ▼
-     WSL2 · Ubuntu 24.04 · systemd · Docker Engine
-       └─ web   (Nginx: chat, /widget/tutor-cee.js, /api → api)   ← único servicio abierto a la red
-       └─ api   (FastAPI + embeddings e5-small)                    ← 127.0.0.1:8000, solo desde la propia PC
-       └─ ollama (granite3.3:2b)                                   ← red interna, sin internet
-       └─ db    (PostgreSQL 18 + pgvector)                         ← red interna, sin puertos
+Alumno (PC/celular de la red del CEE, o a través del campus)
+  │
+  ▼
+Windows 10 · puerto 8080 (firewall: solo red local) · portproxy
+  │
+  ▼
+WSL2 · Ubuntu 24.04 · systemd · Docker Engine
+  ├─ web    Nginx: chat, /widget/tutor-cee.js, /api → api   (único abierto a la red)
+  ├─ api    FastAPI + embeddings e5-small                     (127.0.0.1:8000, solo la PC)
+  ├─ ollama granite3.3:2b                                     (red interna, sin internet)
+  └─ db     PostgreSQL 18 + pgvector                          (red interna, sin puertos)
 ```
 
 **Por qué Docker Engine dentro de WSL2 y no Docker Desktop:**
@@ -48,7 +51,7 @@ Alumno (PC o celular de la red del CEE, o a través del campus)
 | Acceso desde la red | Hace falta un `portproxy` (lo mantiene `vigilar.ps1`) | Directo |
 | Lo conoces de tu PC | Comandos iguales, pero dentro de Ubuntu | Igual que en tu PC |
 
-**Memoria:** la PC tiene 8 GB y ~4 GB libres. Lo que usa el tutor, medido en el benchmark: granite3.3:2b ~1,9 GB, la API con e5-small y PyTorch ~0,8–1 GB, PostgreSQL ~0,2 GB y Nginx casi nada: **~3–3,5 GB**. Por eso va **granite** y no qwen3 (3,0 GB solo el modelo). WSL se limita a 4 GB con 4 GB de swap en el SSD (paso 5.2) y cada contenedor tiene su tope (`MEMORIA_*` en `.env`).
+**Memoria:** la PC tiene 8 GB y ~4 GB libres. Lo que usa el tutor, medido en el benchmark: granite3.3:2b ~1,9 GB, la API con e5-small y PyTorch ~0,8–1 GB, PostgreSQL ~0,2 GB y Nginx casi nada: **unos 3–3,5 GB**. Por eso va **granite** y no qwen3 (3,0 GB solo el modelo). WSL se limita a 4 GB con 4 GB de swap en el SSD (paso 5.2) y cada contenedor tiene su tope (`MEMORIA_*` en `.env`).
 
 **Archivos de este despliegue (en el repo):**
 
