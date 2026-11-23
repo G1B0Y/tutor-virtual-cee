@@ -48,7 +48,9 @@ scripts/             utilidades de desarrollo (generar el corpus de prueba)
 benchmark/           set de preguntas, scripts y resultados (Fase 2)
 frontend/            widget React + TS + Vite; index.html = campus simulado
 infra/db/            SQL inicial de la base (extensión pgvector; migraciones desde la Fase 1)
-infra/               más adelante: Nginx, systemd y respaldos (Fase 6)
+infra/web/           Nginx del despliegue (chat, tutor-cee.js y /api)
+infra/cee/           despliegue en la PC del CEE: systemd, tareas de Windows, vigilancia y respaldo (docs/DESPLIEGUE.md)
+docker-compose.cee.yml  se suma al compose base en la PC del CEE
 docs/                ROADMAP, PROYECTO, ARQUITECTURA, BITACORA, referencia/
 ```
 

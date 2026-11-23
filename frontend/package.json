@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build && vite build -c vite.embebido.config.ts",
     "preview": "vite preview",
     "build:embebido": "vite build -c vite.embebido.config.ts",
-    "compartir": "vite build --mode compartir --outDir dist-compartir && vite preview --mode compartir --outDir dist-compartir"
+    "compartir": "vite build --mode compartir --outDir dist-compartir && vite build -c vite.embebido.config.ts --outDir dist-compartir/widget && vite preview --mode compartir --outDir dist-compartir"
   },
   "dependencies": {
     "react": "19.3.1",

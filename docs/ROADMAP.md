@@ -18,7 +18,7 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 | 5. Pruebas y ensayo PC3 | 12–16/11 | Set de preguntas, fuera de alcance, prompt injection, Ollama caído, concurrencia 1/3/5/9 | Informe de pruebas y demo ensayada | ⬜ |
 | **Hito PC3** | **17/11** | Demo del MVP al ingeniero | MVP v1.0 aprobado o lista de observaciones | ⬜ |
 | 6. Correcciones y servidor simulado | 18–22/11 | Observaciones de PC3; VM Ubuntu Server 24.04 con 4 vCPU y 8 GB, Nginx + TLS, systemd | MVP v1.1 corriendo en la VM y reiniciándose solo | ⬜ |
-| 7. Despliegue en el CEE | 23/11–06/12 | Pruebas de carga en el equipo real, instalación, piloto, respaldo y manuales | Tutor operando en el CEE (o brecha documentada si TI no lo autoriza) | ⬜ |
+| 7. Despliegue en el CEE | 23/11–06/12 | Pruebas de carga en el equipo real, instalación, piloto, respaldo y manuales | Tutor operando en el CEE (o brecha documentada si TI no lo autoriza) | 🟨 |
 | **Hito PC4** | **08/12** | Tutor implementado | Acta de implementación | ⬜ |
 | 8. Cierre | 07–20/12 | Informe final y exposición | Informe + presentación | ⬜ |
 
@@ -113,8 +113,9 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 7 – Despliegue en el CEE (23/11–06/12)
 
+- [x] Guía de despliegue en Windows por AnyDesk y archivos (`docs/DESPLIEGUE.md`, `docker-compose.cee.yml`, `infra/web/`, `infra/cee/`) (22/11). Falta ensayarla en la PC de Alfredo.
 - [ ] Pruebas de carga en el equipo real (latencia, RAM, límite seguro de concurrencia).
-- [ ] Instalación según lo que autorice TI (Ubuntu o plan B en Windows).
+- [ ] Instalación según lo que autorice TI (Ubuntu o plan B en Windows: WSL2 + Docker Engine, `docs/DESPLIEGUE.md`).
 - [ ] Respaldo de PostgreSQL y documentos con restauración probada.
 - [ ] Piloto con horario definido (meta ≥ 95 % de disponibilidad del horario).
 - [ ] Manuales: uso, actualización de la base de conocimiento, respaldo y restauración.
