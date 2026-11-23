@@ -43,7 +43,7 @@ services:
     depends_on: [api]
     ports:
       # 0.0.0.0: lo ven las demás PC de la red (con la regla del firewall y el portproxy de Windows).
-      - "${PUERTO_WEB:-8080}:80"
+      - "${PUERTO_WEB:-8090}:80"
     networks: [interna, publica]
     mem_limit: 64m
 

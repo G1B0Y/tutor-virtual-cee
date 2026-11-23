@@ -4,7 +4,7 @@
 # Pide la contrasena de la cuenta de Windows donde se instalo Ubuntu (WSL es por usuario).
 param(
     [string]$Distro = "Ubuntu-24.04",
-    [int]$Puerto = 8080,
+    [int]$Puerto = 8090,
     [string]$Carpeta = "C:\TutorCEE"
 )
 $ErrorActionPreference = "Stop"

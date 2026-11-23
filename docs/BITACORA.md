@@ -2,6 +2,13 @@
 
 Una entrada por sesión de trabajo, de la más reciente a la más antigua. El estado actual siempre está en `CLAUDE.md` y el plan en `docs/ROADMAP.md`; aquí queda el historial.
 
+## 23/11/2026
+
+- **Repo del campus revisado** (`edwarddv05/campus-virtual-cee`, compartido por el Grupo 3): Moodle 5.3 con Apache 2.4 + mod_fcgid + PHP 8.3 y PostgreSQL 18 como servicios de Windows (`C:\CEE-Campus`), puertos 80/443/5432; su versión local usa 8080 y 5433. El Grupo 3 dijo por WhatsApp que Moodle usa 2–3 GB y que Edward coordina el despliegue y los turnos de AnyDesk.
+- Hallazgos: su instalador deja `shared_buffers` = 1/4 de la RAM (2 GB) y 16 procesos de PHP en 8 GB, y **regenera `httpd.conf`** cada vez. Pedidos para Edward (guía 2.3): 512 MB y 8 procesos (su prueba de estrés aguantó 50 usuarios con 8 y 484 MB), `IncludeOptional conf/extra/tutor-cee.conf` en su plantilla, y el script del widget con rutas relativas.
+- Cambios: `PUERTO_WEB` 8090 (antes 8080) y `PUERTO_DB=5434` en el CEE; nuevo `infra/cee/apache-tutor.conf` (proxy `/tutor/` → 127.0.0.1:8090), probado en la nube con Apache 2.4.62 + Nginx + API simulada (widget, `/tutor/api/*` con la IP del cliente en `X-Forwarded-For`, `/tutor/api/docs` → 404). Guía 2.1–2.3 y 8.2 al día; PDF regenerado.
+- Pregunta de Alfredo: cómo sabe el bot los cursos del alumno y cómo le llega el material. Hoy: no lo sabe (busca en todo el material cargado) y el material se carga a mano (`corpus.json` + ingesta) tras validarlo el CEE. Propuesta: plugin con token firmado que lleve los códigos de curso (el campo «Código del curso» del Grupo 3, p. ej. GP, que no cambia entre ediciones) y filtro por curso en la búsqueda; carga semiautomática desde Moodle (servicio web de solo lectura) a una carpeta "por validar" más adelante.
+
 ## 22/11/2026
 
 - **Guía de despliegue en la PC del CEE** (pedido de Alfredo: la instalación se hará por AnyDesk en una PC con Windows 10 que está encendida casi 24/7, no en un servidor). Nueva `docs/DESPLIEGUE.md`: verificación de la PC, AnyDesk, instalación paso a paso, arranque sin iniciar sesión, energía, acceso de los alumnos, respaldo, actualización, monitoreo, seguridad y checklist de aceptación.

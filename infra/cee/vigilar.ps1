@@ -6,7 +6,7 @@
 #  4. Si la API no responde 3 veces seguidas (15 min), reinicia Docker dentro de WSL.
 param(
     [string]$Distro = "Ubuntu-24.04",
-    [int]$Puerto = 8080,
+    [int]$Puerto = 8090,
     [string]$Carpeta = "C:\TutorCEE"
 )
 $ErrorActionPreference = "Continue"
