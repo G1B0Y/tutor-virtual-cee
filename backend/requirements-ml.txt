@@ -1,0 +1,4 @@
+# Modelo de embeddings local (Sentence Transformers). Torch se baja en su versión CPU (sin CUDA, mucho más liviana).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1
+sentence-transformers==6.1.0

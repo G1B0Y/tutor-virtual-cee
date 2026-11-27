@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prueba de tutor-cee.js – página tipo Moodle</title>
+    <!--
+      Página para probar tutor-cee.js fuera del campus simulado: tiene estilos agresivos (como los de un tema de
+      Moodle) para comprobar que no cambian el chat. Uso: npm run build y abrir con cualquier servidor estático
+      desde frontend/, por ejemplo: npx vite preview --outDir . --port 4173  →  http://127.0.0.1:4173/ejemplo-moodle.html
+    -->
+    <style>
+      html { font-size: 13px; }
+      body { margin: 0; font-family: Georgia, serif; background: #e9ecef; }
+      * { box-sizing: content-box; }
+      button { background: green !important; font-size: 22px; border: 4px dashed orange; }
+      img { border: 3px solid blue; }
+      p { color: purple; }
+      .navbar { background: #0f6cbf; color: #fff; padding: 12px 16px; }
+      main { padding: 16px; }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">Campus Virtual (Moodle) – página de prueba</nav>
+    <main>
+      <h2>Mis cursos</h2>
+      <p>Este texto morado y los botones verdes son del "tema" de la página: el chat no debe verse así.</p>
+      <button type="button">Botón del tema</button>
+    </main>
+    <script src="dist-embebido/tutor-cee.js" data-api="http://127.0.0.1:8765" defer></script>
+  </body>
+</html>

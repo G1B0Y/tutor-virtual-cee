@@ -1,0 +1,51 @@
+# Despliegue en la PC del CEE (Windows 10 + WSL2 + Docker Engine). Ver docs/DESPLIEGUE.md.
+# Se usa SIEMPRE junto con el compose base, desde la raíz del repo:
+#   docker compose -f docker-compose.yml -f docker-compose.cee.yml up -d --build
+#
+# Qué cambia frente al entorno local:
+# - Nuevo servicio "web" (Nginx): sirve el chat y tutor-cee.js y pasa /api a la API. Es lo único abierto a la red.
+# - La base y Ollama quedan solo en la red "interna" (sin puertos ni salida a internet, RNF-20).
+#   Por eso los modelos se descargan ANTES, con el compose base (docs/DESPLIEGUE.md, paso 5).
+# - La API no intenta descargar nada (HF_HUB_OFFLINE) y confía en el X-Forwarded-For de Nginx.
+# - Límites de memoria por contenedor: la PC tiene ~4 GB libres.
+
+services:
+  db:
+    ports: !reset []
+    networks: !override [interna]
+    mem_limit: ${MEMORIA_DB:-512m}
+
+  ollama:
+    ports: !reset []
+    networks: !override [interna]
+    mem_limit: ${MEMORIA_OLLAMA:-3g}
+    environment:
+      # Opcional si falta RAM (Moodle en la misma PC): FLASH_ATTENTION=1 + KV_CACHE_TYPE=q8_0 ahorran ~150 MB.
+      # Vacíos = valores normales de Ollama. Medir antes y después con las preguntas de la demo.
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-}
+
+  api:
+    environment:
+      CONFIAR_EN_PROXY: "true"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    # Sigue publicada en 127.0.0.1:8000 (solo desde la propia PC) para /docs y el listado de pendientes.
+    mem_limit: ${MEMORIA_API:-1536m}
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: ../infra/web/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./infra/web/tutor-cee.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [api]
+    ports:
+      # 0.0.0.0: lo ven las demás PC de la red (con la regla del firewall y el portproxy de Windows).
+      - "${PUERTO_WEB:-8090}:80"
+    networks: [interna, publica]
+    mem_limit: 64m
+
+networks:
+  publica:

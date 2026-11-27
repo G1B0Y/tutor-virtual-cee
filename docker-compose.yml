@@ -1,0 +1,94 @@
+# Entorno local del Tutor Virtual (Fase 0).
+# Uso (desde la raíz del repo, con el archivo .env creado):  docker compose up -d
+# Los puertos se publican solo en 127.0.0.1: nada queda abierto a la red.
+
+name: tutor-virtual
+
+services:
+  db:
+    image: pgvector/pgvector:0.8.6-pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tutor}
+      POSTGRES_USER: ${POSTGRES_USER:-tutor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    volumes:
+      - datos_db:/var/lib/postgresql
+      - ./infra/db:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${PUERTO_DB:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+    # Docker no publica puertos de contenedores que solo están en una red interna.
+    # En local la base también va en "descarga" para poder entrar desde la PC (pruebas, psql).
+    # En el servidor (Fase 6) se quita el puerto y la red "descarga": la base queda solo en "interna".
+    networks: [interna, descarga]
+
+  ollama:
+    image: ollama/ollama:0.34.3
+    restart: unless-stopped
+    environment:
+      # Un solo modelo cargado y una generación a la vez (RNF-M02, RNF-M03).
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      # El modelo queda en memoria aunque no haya preguntas (cargarlo en CPU puede tardar minutos).
+      OLLAMA_KEEP_ALIVE: "-1"
+    volumes:
+      - modelos_ollama:/root/.ollama
+    ports:
+      - "127.0.0.1:${PUERTO_OLLAMA:-11434}:11434"
+    # En local Ollama necesita la red "descarga" para bajar los modelos.
+    # En el servidor (Fase 6) se quita esa red: Ollama queda sin salida a internet (RNF-20).
+    networks: [interna, descarga]
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tutor}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tutor}
+      OLLAMA_URL: http://ollama:11434
+      ORIGENES_PERMITIDOS: ${ORIGENES_PERMITIDOS:-["http://localhost:5173"]}
+      LLM_MODELO: ${LLM_MODELO:-granite3.3:2b}
+      EMBEDDINGS_MODELO: ${EMBEDDINGS_MODELO:-intfloat/multilingual-e5-small}
+      UMBRAL_DISTANCIA: ${UMBRAL_DISTANCIA:-0.18}
+      UMBRAL_FAQ: ${UMBRAL_FAQ:-0.10}
+      PESO_LEXICO: ${PESO_LEXICO:-1.0}
+      MARGEN_PUNTAJE: ${MARGEN_PUNTAJE:-0.4}
+      PUNTAJE_REINTENTO: ${PUNTAJE_REINTENTO:-1.6}
+      MINIMO_RESPALDO: ${MINIMO_RESPALDO:-0.6}
+      FRAGMENTOS_RAZONAMIENTO: ${FRAGMENTOS_RAZONAMIENTO:-6}
+      MARGEN_RAZONAMIENTO: ${MARGEN_RAZONAMIENTO:-0.8}
+      UMBRAL_RAZONAMIENTO: ${UMBRAL_RAZONAMIENTO:-0.20}
+      MINIMO_RESPALDO_RAZONAMIENTO: ${MINIMO_RESPALDO_RAZONAMIENTO:-0.5}
+      PUNTAJE_REINTENTO_RAZONAMIENTO: ${PUNTAJE_REINTENTO_RAZONAMIENTO:-1.0}
+      FRAGMENTOS_LISTA: ${FRAGMENTOS_LISTA:-4}
+      LIMITE_POR_MINUTO: ${LIMITE_POR_MINUTO:-8}
+      CONFIAR_EN_PROXY: ${CONFIAR_EN_PROXY:-false}
+      CLAVE_CEE: ${CLAVE_CEE:-}
+      EMBEDDINGS_PROVEEDOR: ${EMBEDDINGS_PROVEEDOR:-sentence-transformers}
+    volumes:
+      # Documentos para la ingesta (solo lectura) y caché del modelo de embeddings.
+      - ./corpus:/corpus:ro
+      # Set de preguntas del benchmark y carpeta donde quedan sus informes (Fase 2).
+      - ./benchmark:/benchmark
+      - modelos_embeddings:/root/.cache/huggingface
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    ports:
+      - "127.0.0.1:${PUERTO_API:-8000}:8000"
+    networks: [interna, descarga]
+
+volumes:
+  datos_db:
+  modelos_ollama:
+  modelos_embeddings:
+
+networks:
+  interna:
+    internal: true
+  descarga:

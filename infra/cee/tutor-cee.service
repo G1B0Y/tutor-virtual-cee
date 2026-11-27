@@ -1,0 +1,18 @@
+# Arranca el tutor cuando arranca Ubuntu (WSL2 en la PC del CEE, o un Ubuntu Server más adelante).
+# Instalar:  sudo cp infra/cee/tutor-cee.service /etc/systemd/system/ && sudo systemctl enable --now tutor-cee
+[Unit]
+Description=Tutor Virtual CEE (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/tutor-virtual-cee
+ExecStart=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.cee.yml up -d
+ExecStop=/usr/bin/docker compose -f docker-compose.yml -f docker-compose.cee.yml stop
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

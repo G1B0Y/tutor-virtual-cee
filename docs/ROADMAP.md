@@ -10,15 +10,15 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 | Fase | Fechas | Contenido | Entregable que se revisa | Estado |
 | --- | --- | --- | --- | --- |
-| 0. Preparación | 01–02/11 | Repo, documentos base, esqueleto y entorno local con Docker | `docker compose up` levanta PostgreSQL + pgvector y Ollama; la API responde `/salud` | 🟨 |
-| 1. Base de conocimiento | 02–05/11 | Modelo de datos, script de ingesta de PDFs y FAQs, vigencia y retiro | Cargar un corpus de prueba y ver documentos, versiones y fragmentos en la base | ⬜ |
-| 2. RAG y benchmark | 04–08/11 | Búsqueda por similitud, umbral de rechazo, set de 30 preguntas, comparación de 2 embeddings y 2 LLM | Informe de benchmark: recall@5, aciertos con fuente, rechazos, tiempos y RAM | ⬜ |
-| 3. API | 06–10/11 | FastAPI: consulta, salud, consultas no resueltas, cola de 1 generación, límites y registro | API documentada en `/docs` (OpenAPI) y probada con pytest | ⬜ |
-| 4. Chat (widget) | 08–12/11 | React + TS + Vite: chat, fuentes, "no encontrado", ocupado, aviso de asistente; campus simulado | El chat funciona embebido en una página que simula el campus, en PC y celular | ⬜ |
+| 0. Preparación | 01–02/11 | Repo, documentos base, esqueleto y entorno local con Docker | `docker compose up` levanta PostgreSQL + pgvector y Ollama; la API responde `/salud` | ✅ |
+| 1. Base de conocimiento | 02–05/11 | Modelo de datos, script de ingesta de PDFs y FAQs, vigencia y retiro | Cargar un corpus de prueba y ver documentos, versiones y fragmentos en la base | 🟨 |
+| 2. RAG y benchmark | 04–08/11 | Búsqueda por similitud, umbral de rechazo, set de 30 preguntas, comparación de 2 embeddings y 2 LLM | Informe de benchmark: recall@5, aciertos con fuente, rechazos, tiempos y RAM | 🟨 |
+| 3. API | 06–10/11 | FastAPI: consulta, salud, consultas no resueltas, cola de 1 generación, límites y registro | API documentada en `/docs` (OpenAPI) y probada con pytest | 🟨 |
+| 4. Chat (widget) | 08–12/11 | React + TS + Vite: chat, fuentes, "no encontrado", ocupado, aviso de asistente; campus simulado | El chat funciona embebido en una página que simula el campus, en PC y celular | 🟨 |
 | 5. Pruebas y ensayo PC3 | 12–16/11 | Set de preguntas, fuera de alcance, prompt injection, Ollama caído, concurrencia 1/3/5/9 | Informe de pruebas y demo ensayada | ⬜ |
 | **Hito PC3** | **17/11** | Demo del MVP al ingeniero | MVP v1.0 aprobado o lista de observaciones | ⬜ |
 | 6. Correcciones y servidor simulado | 18–22/11 | Observaciones de PC3; VM Ubuntu Server 24.04 con 4 vCPU y 8 GB, Nginx + TLS, systemd | MVP v1.1 corriendo en la VM y reiniciándose solo | ⬜ |
-| 7. Despliegue en el CEE | 23/11–06/12 | Pruebas de carga en el equipo real, instalación, piloto, respaldo y manuales | Tutor operando en el CEE (o brecha documentada si TI no lo autoriza) | ⬜ |
+| 7. Despliegue en el CEE | 23/11–06/12 | Pruebas de carga en el equipo real, instalación, piloto, respaldo y manuales | Tutor operando en el CEE (o brecha documentada si TI no lo autoriza) | 🟨 |
 | **Hito PC4** | **08/12** | Tutor implementado | Acta de implementación | ⬜ |
 | 8. Cierre | 07–20/12 | Informe final y exposición | Informe + presentación | ⬜ |
 
@@ -30,63 +30,74 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 - [x] `CLAUDE.md`, `docs/ROADMAP.md`, `docs/PROYECTO_TUTOR_VIRTUAL.md`, `docs/ARQUITECTURA.md`, `docs/BITACORA.md`, `README.md`.
 - [x] Documentos originales en `docs/referencia/`.
 - [x] Crear el repo privado (G1B0Y/tutor-virtual-cee) y subir todo lo anterior.
-- [ ] Esqueleto: `backend/` (FastAPI), `frontend/` (React + TS + Vite), `ingesta/`, `benchmark/`, `infra/`.
-- [ ] `docker-compose.yml` local: PostgreSQL + pgvector, Ollama, API. Ollama sin puerto publicado hacia afuera y sin salida a internet en producción.
-- [ ] Descargar los modelos candidatos en Ollama y los de embeddings.
-- [ ] README con la instalación en Windows (Docker Desktop + WSL2, Python, Node).
+- [x] Esqueleto: `backend/` (FastAPI con `/salud`), `frontend/` (widget + campus simulado), `infra/db/`. `ingesta/` y `benchmark/` se crean en sus fases.
+- [x] `docker-compose.yml` local: PostgreSQL 18 + pgvector 0.8.6, Ollama 0.34.3, API. Puertos solo en 127.0.0.1; base y Ollama en una red interna.
+- [ ] Descargar los modelos candidatos en Ollama y los de embeddings (pasa a la Fase 2).
+- [x] README con la instalación en Windows (Docker Desktop + WSL2, Python, Node).
+- [x] CI en GitHub Actions: pruebas del backend, build del frontend y validación del compose.
 
 **Listo cuando:** en la PC de Alfredo, `docker compose up` levanta todo y `GET /salud` responde `ok` con el estado de la base y de Ollama.
 
 ### Fase 1 – Base de conocimiento (02–05/11) · RF-M05
 
-- [ ] Migraciones del modelo de datos (ver `docs/ARQUITECTURA.md`): documentos, versiones, fragmentos con embedding, FAQs, consultas no resueltas, eventos técnicos.
-- [ ] Script `ingesta`: PDF con texto → extracción por página → fragmentos (~500 tokens con solapamiento) → embeddings locales → pgvector.
-- [ ] Metadatos por documento: curso, versión, fecha de vigencia y estado (vigente / retirado).
-- [ ] Reemplazar un documento retira del índice la versión anterior.
-- [ ] Carga de FAQs desde un CSV/Excel (pregunta, respuesta, fuente).
-- [ ] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
-- [ ] Corpus de prueba mientras el CEE entrega el real (temarios y separatas de ejemplo, marcados como "PRUEBA").
+- [x] Migraciones del modelo de datos (ver `docs/ARQUITECTURA.md`): documentos, versiones, fragmentos con embedding, FAQs, consultas no resueltas, eventos técnicos. Con 6 pruebas de integración (01/11).
+- [x] Script `ingesta` (`python -m app.ingesta`): PDF con texto → extracción por página → fragmentos (~900 caracteres, solape de 1 oración) → embeddings locales → pgvector (01/11).
+- [x] Metadatos por documento: curso, versión, fecha de vigencia y estado (vigente / retirado) — en la base y en `corpus.json` / opciones del script.
+- [x] Reemplazar un documento retira del índice la versión anterior (`registrar_version` + vista `fragmentos_vigentes`).
+- [x] Carga de FAQs desde un CSV (pregunta, respuesta, fuente). Excel queda para después si el CEE lo prefiere.
+- [x] Rechazar PDFs sin texto extraíble (escaneados) con un mensaje claro.
+- [x] Corpus de prueba mientras el CEE entrega el real: 6 PDF y 5 FAQs en `corpus/prueba/`, marcados "DOCUMENTO DE PRUEBA" (01/11; 6 PDF desde el 04/11). Falta probar el reemplazo con un archivo real.
+- [x] Material complementario de los 3 cursos (08/11, pedido de Alfredo): 12 separatas en `corpus/complementario/` redactadas con fuentes públicas y marcadas "MATERIAL DE PRUEBA" en cada página; comando `retirar` para sacarlas cuando llegue el material del CEE. Falta probar las respuestas en la PC de Alfredo.
 
 **Listo cuando:** se cargan 5+ PDFs y un CSV de FAQs, se reemplaza uno y la base solo deja vigente la versión nueva.
 
 ### Fase 2 – RAG y benchmark (04–08/11) · RF-M02, RF-M03, RNF-M03, RNF-M04
 
-- [ ] Búsqueda por similitud en pgvector (top-k = 5) con índice HNSW.
-- [ ] Umbral de relevancia: por debajo, el bot se abstiene y orienta al canal humano.
-- [ ] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
-- [ ] Respuesta con fuente: nombre del documento y página.
-- [ ] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus, 10 fuera de alcance (trámites, matrícula, temas ajenos).
-- [ ] Benchmark reproducible: **≥2 modelos de embeddings** y **≥2 LLM**; medir recall@5, aciertos con fuente, rechazos correctos, tiempo al primer token, tiempo total y RAM.
-- [ ] Elegir modelos y fijar sus versiones; verificar licencias en la ficha oficial (RNF-23).
+- [x] Búsqueda por similitud en pgvector con índice HNSW (top-k = 4 por ahora, configurable).
+- [x] Umbral de relevancia: por debajo, el bot se abstiene y orienta al canal humano (valor inicial 0.55; se calibra con el set de preguntas).
+- [x] Prompt con instrucciones del sistema, fragmentos y pregunta separados (anti prompt injection).
+- [x] Respuesta con fuente: nombre del documento y página.
+- [x] Probar en la PC de Alfredo con los modelos reales y el corpus de prueba (01/11: 7 preguntas; ver bitácora). Falta repetir con los arreglos del prompt.
+- [x] Set de **30 preguntas** con respuesta esperada: 20 dentro del corpus (3 de ellas para FAQ), 10 fuera de alcance (trámites, matrícula, temas ajenos, prompt injection) en `benchmark/preguntas.json` (04/11). Se rehace con el corpus real.
+- [x] Script del benchmark reproducible (`python -m app.benchmark`, 04/11): **2 modelos de embeddings** (MiniLM-L12 multilingüe, multilingual-e5-small) y **2 LLM** (qwen2.5:1.5b, granite3.3:2b); mide recall@1/@5, aciertos con fuente, rechazos correctos (por búsqueda y por modelo), tiempo al primer token, tiempo total (promedio y p95) y RAM; propone los umbrales de documentos y FAQs. Informe en `benchmark/resultados/`.
+- [x] Correr el benchmark completo en la PC de Alfredo (07/11: informe `2026-11-07_1822`). Informe en `benchmark/resultados/`.
+- [x] Elegir modelos (07/11, decisión de Alfredo): **e5-small + granite3.3:2b** (19/20 aciertos con fuente, 10/10 rechazos, 10,6 s promedio). Umbrales 0.18 / 0.10 en `.env.example` y por defecto; comando `python -m app.ingesta reindexar` para recalcular los vectores al cambiar de embeddings.
+- [x] Control de respaldo sin el modelo (08/11): se quitan las frases y los elementos de lista que no están en los documentos; si la lista es inventada o queda poco, se abstiene (`app/rag/respaldo.py`).
+- [x] Probar el control de respaldo en la PC de Alfredo y repetir el benchmark del par elegido (08/11: 19/20, 10/10, 4,6 s).
+- [x] Búsqueda híbrida (significado + palabras de la pregunta con IDF) y comando `python -m app.diagnostico` (08/11), por los fallos con el corpus complementario (CPI/Cp, project charter, OEE, PERT). Falta calibrar `PESO_LEXICO` y `MARGEN_PUNTAJE` en la PC de Alfredo.
+- [x] Segundo intento con evidencia fuerte, fragmento siguiente pegado al mejor, ordinales ("8.ª" = "octava") y abstención con listas a medias (08/11; 8ebc978 en su PC: 20/20, 10/10, 5,1 s). Falta repetir las 21 preguntas con el último ajuste.
+- [ ] Verificar las licencias en la ficha oficial (RNF-23): e5-small (MIT) y granite3.3:2b (Apache 2.0).
 
 **Listo cuando:** recall@5 ≥ 80 % y hay un informe con los modelos elegidos y por qué.
 
 ### Fase 3 – API (06–10/11) · RF-M04, RF-M06, RF-M07, RNF-M02, RNF-M05
 
-- [ ] `POST /consulta` (pregunta + id de conversación) → respuesta, fuentes y estado (`respondida`, `sin_evidencia`, `fuera_de_alcance`, `ocupado`).
-- [ ] `GET /salud` (API, base y Ollama).
-- [ ] `POST /consultas-pendientes` para dejar una consulta a atención diferida (mínimos datos) y listado para el CEE (protegido).
-- [ ] Cola con **una generación activa**, cola corta, timeout y aviso de "sistema ocupado".
-- [ ] Límite de solicitudes por usuario y por minuto.
-- [ ] FAQs sin LLM cuando la pregunta coincide con una FAQ o cuando Ollama está caído.
-- [ ] Registro de errores, tiempos y eventos sin datos sensibles.
-- [ ] Validación de entradas (longitud y formato) con Pydantic; pruebas con pytest.
+- [x] `POST /consulta` → respuesta, fuentes y estado (`respondida`, `faq`, `sin_evidencia`, `sin_llm`, `ocupado`). Falta el id de conversación y el token de sesión.
+- [x] `GET /salud` (API, base y Ollama; avisa si falta descargar el modelo).
+- [x] Consultas pendientes: se guardan solas al abstenerse; listado para el CEE (`GET /consultas-pendientes`, protegido con `X-Clave-CEE`) y marcar atendida (08/11). Falta, si se pide, que el alumno deje un contacto.
+- [x] Cola con **una generación activa**, cola de 3, timeout y aviso de "sistema ocupado".
+- [x] Límite de solicitudes por usuario y por minuto (08/11: 8 por defecto, HTTP 429; por IP hasta que el Campus pase un id del alumno).
+- [x] FAQs sin LLM cuando la pregunta coincide con una FAQ; con Ollama caído, el fragmento más cercano con su fuente.
+- [x] Registro de tiempos y estado de cada consulta en `eventos`, sin el texto de la pregunta. Falta el registro de errores.
+- [x] Validación de entradas (2 a 500 caracteres) con Pydantic; pruebas con pytest.
 
 **Listo cuando:** la documentación OpenAPI está completa y las pruebas pasan, incluida la de Ollama apagado.
 
 ### Fase 4 – Chat (08–12/11) · RF-M01, RNF-13, RNF-24 a 26
 
-- [ ] Widget de chat en React + TypeScript + Vite, embebible (botón flotante que abre el panel).
-- [ ] Mensajes con fuentes, estado "no encontré información" con el canal humano, "sistema ocupado" y error claro si el bot no responde.
-- [ ] Aviso visible: "asistente automatizado, puede equivocarse".
-- [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible.
+- [x] Widget de chat en React + TypeScript + Vite (botón flotante que abre el panel). Empaquetado como `tutor-cee.js` con Shadow DOM (08/11).
+- [x] Mensajes con fuentes, estado "no encontré información" con el canal humano, "sistema ocupado" y error claro si el bot no responde.
+- [x] Aviso visible: "asistente automatizado, puede equivocarse".
+- [ ] Mobile-first (desde 360 px), navegación por teclado y contraste legible. 08/11: 360 px sin desborde y con `100dvh` (Playwright); falta un celular real y revisar teclado/contraste.
 - [ ] **Campus simulado:** página HTML que embebe el widget y le pasa un token de sesión de prueba, hasta que el Grupo 3 defina la integración real.
-- [ ] Si la API cae, el campus simulado sigue funcionando (RNF-03).
+- [x] Si la API cae, el campus simulado sigue funcionando (RNF-03).
 
 **Listo cuando:** se conversa desde el celular por la red local y desde la PC, dentro del campus simulado.
 
 ### Fase 5 – Pruebas y ensayo de PC3 (12–16/11)
 
+- [x] Curso Sistemas Integrados Empresariales: 3 módulos (Marketing, Ventas, CRM) en `corpus/sie/`, preguntas de razonamiento y su benchmark (`benchmark/preguntas_sie.json`) (09/11/2026, adelantado para la demo del 11/11).
+- [ ] Cargar `corpus/sie` y correr su benchmark en la PC de Alfredo antes del 11/11.
 - [ ] Correr el set de 30 preguntas sobre el sistema completo: ≥ 85 % correctas con fuente y 100 % de rechazos correctos.
 - [ ] Pruebas de prompt injection y entradas inválidas.
 - [ ] Apagar Ollama y la API durante la prueba y comprobar los mensajes del chat.
@@ -102,15 +113,18 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 
 ### Fase 7 – Despliegue en el CEE (23/11–06/12)
 
+- [x] Guía de despliegue en Windows por AnyDesk y archivos (`docs/DESPLIEGUE.md`, `docker-compose.cee.yml`, `infra/web/`, `infra/cee/`) (22/11). Falta ensayarla en la PC de Alfredo.
+- [x] Guía para que el equipo del campus instale el tutor en su PC y lo integre a su Moodle (`docs/GUIA_INTEGRACION_CAMPUS.md`, 27/11); repo público.
+- [ ] Unir todo a `main` (PR de la guía, que incluye los PR #1–#5) y que Edward (Grupo 3) lo pruebe en su Moodle.
 - [ ] Pruebas de carga en el equipo real (latencia, RAM, límite seguro de concurrencia).
-- [ ] Instalación según lo que autorice TI (Ubuntu o plan B en Windows).
+- [ ] Instalación según lo que autorice TI (Ubuntu o plan B en Windows: WSL2 + Docker Engine, `docs/DESPLIEGUE.md`).
 - [ ] Respaldo de PostgreSQL y documentos con restauración probada.
 - [ ] Piloto con horario definido (meta ≥ 95 % de disponibilidad del horario).
 - [ ] Manuales: uso, actualización de la base de conocimiento, respaldo y restauración.
 
 ## Segunda iteración (fuera del MVP)
 
-Memoria conversacional extensa, streaming, explicaciones avanzadas, cuestionarios, valoración de respuestas, historial persistente, personalización por matrícula, verificación automática tras la carga, indicadores de uso y pantalla de administración. Se retoman solo si el benchmark y el tiempo lo permiten.
+Consultar los pendientes del alumno en Moodle ("¿qué me falta entregar?", propuesta del 03/11 en `docs/INTEGRACION_CAMPUS.md`), memoria conversacional extensa, streaming, explicaciones avanzadas, cuestionarios, valoración de respuestas, historial persistente, personalización por matrícula, verificación automática tras la carga, indicadores de uso y pantalla de administración. Se retoman solo si el benchmark y el tiempo lo permiten.
 
 ## Riesgos que pueden mover el plan
 

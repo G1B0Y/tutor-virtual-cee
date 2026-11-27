@@ -28,29 +28,49 @@ Todo corre en contenedores con Docker Compose. Solo Nginx se publica; PostgreSQL
 6. Si hay evidencia → prompt con tres partes separadas (instrucciones, fragmentos, pregunta) → Ollama, con cola de una generación y timeout.
 7. Responde con el texto y las fuentes (documento y página); registra tiempos y estado.
 
+Implementado el 01/11/2026 en `backend/app/consulta.py` (sin id de conversación ni token todavía). Estados de la respuesta:
+
+| Estado | Cuándo | Qué ve el alumno |
+| --- | --- | --- |
+| `faq` | La pregunta se parece a una FAQ (distancia ≤ 0.25) | La respuesta de la FAQ, al instante |
+| `respondida` | Hay fragmentos cercanos (distancia ≤ 0.55) y el modelo contestó | Respuesta + fuentes (documento, página) |
+| `sin_evidencia` | Nada cercano, o el modelo dijo `SIN_EVIDENCIA` | "No encontré esa información" + canal humano; se guarda en `consultas_pendientes` |
+| `sin_llm` | Ollama caído o sin modelo | El fragmento más cercano con su fuente |
+| `ocupado` | Ya hay 1 generando y 3 esperando | "Hay muchas consultas en este momento. Intenta de nuevo en un minuto." |
+
 ## Estructura del repositorio
 
 ```
-backend/        FastAPI: app/, rag/, api/, tests/
-ingesta/        script de carga de PDFs y FAQs
-benchmark/      set de preguntas, scripts y resultados
-frontend/       widget React + TS + Vite y campus simulado
-infra/          docker-compose.yml, Nginx, systemd, scripts de respaldo
-docs/           CLAUDE.md complementa: ROADMAP, PROYECTO, ARQUITECTURA, BITACORA, referencia/
+docker-compose.yml   PostgreSQL + pgvector, Ollama y API (entorno local)
+backend/             FastAPI: app/ (config, salud, consulta, ingesta, rag/), tests/
+corpus/prueba/       documentos y FAQs ficticios para probar (marcados "DOCUMENTO DE PRUEBA")
+scripts/             utilidades de desarrollo (generar el corpus de prueba)
+benchmark/           set de preguntas, scripts y resultados (Fase 2)
+frontend/            widget React + TS + Vite; index.html = campus simulado
+infra/db/            SQL inicial de la base (extensión pgvector; migraciones desde la Fase 1)
+infra/web/           Nginx del despliegue (chat, tutor-cee.js y /api)
+infra/cee/           despliegue en la PC del CEE: systemd, tareas de Windows, vigilancia y respaldo (docs/DESPLIEGUE.md)
+docker-compose.cee.yml  se suma al compose base en la PC del CEE
+docs/                ROADMAP, PROYECTO, ARQUITECTURA, BITACORA, referencia/
 ```
 
-## Modelo de datos (borrador)
+## Modelo de datos
 
-| Tabla | Campos principales | Notas |
+Una sola base: PostgreSQL 18 + pgvector. SQL en `infra/db/002_base_conocimiento.sql` (01/11/2026).
+
+| Tabla | Campos principales | Reglas |
 | --- | --- | --- |
-| `documentos` | id, titulo, curso, tipo (separata, temario, manual, faq), creado_en | Un documento lógico |
-| `versiones_documento` | id, documento_id, version, archivo, hash, vigente_desde, estado (vigente / retirado) | Al cargar una nueva, la anterior pasa a retirado |
-| `fragmentos` | id, version_id, pagina, orden, texto, embedding `vector(n)` | `n` según el modelo de embeddings elegido; índice HNSW coseno |
-| `faqs` | id, pregunta, respuesta, fuente, activa, embedding `vector(n)` | Respuesta directa sin LLM |
-| `consultas_pendientes` | id, pregunta, motivo (sin_evidencia, fuera_de_alcance, error), contacto opcional, creada_en, atendida | Mínimos datos; retención por definir |
-| `eventos` | id, tipo, estado, ms_total, ms_primer_token, modelo, creado_en | Sin texto de la pregunta ni datos personales |
+| `documentos` | id, titulo, curso, tipo (temario, separata, presentacion, manual, reglamento, otro), creado_en | Un documento lógico |
+| `versiones_documento` | id, documento_id, version, archivo, hash_sha256, paginas, vigente_desde, estado (vigente / retirado), cargado_en, retirado_en | **Una sola vigente por documento** (índice único parcial). `retirado_en` obligatorio si está retirada |
+| `fragmentos` | id, version_id, orden, pagina, texto, embedding `vector(384)` | Índice HNSW coseno. Se borran con su versión |
+| `faqs` | id, pregunta, respuesta, fuente, activa, embedding `vector(384)` | Respuesta directa sin LLM. Índice HNSW coseno |
+| `consultas_pendientes` | id, pregunta (≤ 1000), motivo (sin_evidencia, fuera_de_alcance, error, pedido_del_alumno), contacto opcional (≤ 200), creada_en, atendida_en, nota_atencion | Mínimos datos; retención por definir con TI |
+| `eventos` | id, tipo (consulta, ingesta, error, salud), estado, ms_total, ms_primer_token, modelo, creado_en | Sin texto de la pregunta ni datos personales |
 
-La búsqueda filtra siempre por `versiones_documento.estado = 'vigente'`.
+- **Vista `fragmentos_vigentes`:** fragmentos de versiones vigentes con título, curso y tipo del documento. **El RAG busca solo aquí**, así nunca responde con material retirado.
+- **Función `registrar_version(documento, archivo, hash, paginas)`:** en una sola transacción retira la versión vigente y crea la siguiente (número correlativo). Rechaza volver a cargar el mismo archivo si ya es el vigente.
+- **Dimensión 384:** la de los dos modelos de embeddings candidatos. Si el benchmark elige otro con otra dimensión, se cambia el SQL y se recalculan los embeddings.
+- Búsqueda: `ORDER BY embedding <=> :pregunta LIMIT 4` (distancia coseno: 0 = idéntico, 2 = opuesto).
 
 ## Entornos
 
@@ -62,7 +82,7 @@ La búsqueda filtra siempre por `versiones_documento.estado = 'vigente'`.
 
 ## Decisiones pendientes
 
-- Modelos de LLM y embeddings (Fase 2).
+- Modelos de LLM y embeddings (Fase 2). Mientras tanto: `qwen2.5:1.5b` y `paraphrase-multilingual-MiniLM-L12-v2`.
 - Umbral de relevancia (Fase 2, con el set de preguntas).
 - Mecanismo de sesión con el campus (Grupo 3).
 - Sistema operativo del equipo del CEE (TI).
