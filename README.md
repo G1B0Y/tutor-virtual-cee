@@ -2,11 +2,17 @@
 
 Chatbot RAG local, en español y a costo S/ 0, integrado al Campus Virtual del CEE. Proyecto del Grupo 5, curso Sistemas Integrados Empresariales (UNI).
 
+> **¿Eres del equipo del Campus Virtual (Moodle) y quieres instalarlo y probarlo en tu PC?** Empieza por
+> [`docs/GUIA_INTEGRACION_CAMPUS.md`](docs/GUIA_INTEGRACION_CAMPUS.md): requisitos, instalación en Windows con Docker,
+> carga de cursos, la línea que va en Moodle, ajustes de memoria y cómo verificar que funciona. Este README es la guía
+> del entorno de desarrollo.
+
 - Plan y estado: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - Contexto: [`docs/PROYECTO_TUTOR_VIRTUAL.md`](docs/PROYECTO_TUTOR_VIRTUAL.md)
 - Arquitectura: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md)
 - Bitácora: [`docs/BITACORA.md`](docs/BITACORA.md)
 - Despliegue en la PC del CEE (Windows + AnyDesk): [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md)
+- Integración con Moodle para el equipo del campus: [`docs/GUIA_INTEGRACION_CAMPUS.md`](docs/GUIA_INTEGRACION_CAMPUS.md)
 
 ## Stack
 
