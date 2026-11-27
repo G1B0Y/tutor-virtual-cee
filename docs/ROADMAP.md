@@ -114,6 +114,8 @@ Plan de trabajo del MVP del Tutor Virtual del CEE FIIS-UNI (Grupo 5). Se desarro
 ### Fase 7 – Despliegue en el CEE (23/11–06/12)
 
 - [x] Guía de despliegue en Windows por AnyDesk y archivos (`docs/DESPLIEGUE.md`, `docker-compose.cee.yml`, `infra/web/`, `infra/cee/`) (22/11). Falta ensayarla en la PC de Alfredo.
+- [x] Guía para que el equipo del campus instale el tutor en su PC y lo integre a su Moodle (`docs/GUIA_INTEGRACION_CAMPUS.md`, 27/11); repo público.
+- [ ] Unir todo a `main` (PR de la guía, que incluye los PR #1–#5) y que Edward (Grupo 3) lo pruebe en su Moodle.
 - [ ] Pruebas de carga en el equipo real (latencia, RAM, límite seguro de concurrencia).
 - [ ] Instalación según lo que autorice TI (Ubuntu o plan B en Windows: WSL2 + Docker Engine, `docs/DESPLIEGUE.md`).
 - [ ] Respaldo de PostgreSQL y documentos con restauración probada.

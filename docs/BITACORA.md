@@ -2,6 +2,15 @@
 
 Una entrada por sesión de trabajo, de la más reciente a la más antigua. El estado actual siempre está en `CLAUDE.md` y el plan en `docs/ROADMAP.md`; aquí queda el historial.
 
+## 27/11/2026
+
+- **Pedido de Alfredo:** Edward (Grupo 3) pidió el GitHub del bot para integrarlo y probarlo en su PC, sin ser colaborador. Alfredo quiere que el repo "tenga todo y esté explicado de manera detallada".
+- Revisado: el repo **ya es público**; el historial (82 commits, todas las ramas) no tiene contraseñas, claves, `.env` ni datos personales. Pero **`main` solo tenía los documentos base**: todo el código estaba en las ramas de los PR #1–#5 sin unir, así que quien clonara se llevaba un repo vacío. La rama de esta sesión parte de la del despliegue (que incluye todo) y su PR va a `main`.
+- Nueva `docs/GUIA_INTEGRACION_CAMPUS.md`: requisitos (RAM, disco, puertos 8090/8000/5434/11434), instalación en Windows con Docker Desktop (primer arranque con internet, modelos y cursos, y luego modo campus con `docker-compose.cee.yml`), formato de `corpus.json` y `faqs.csv` y comandos de la ingesta, granite por defecto y qwen3 opcional, las tres formas de ponerlo en Moodle (Moodle local en `localhost:8080` con script absoluto y CORS; Moodle de servidor con `infra/cee/apache-tutor.conf` y script relativo `/tutor/`; Moodle en otra PC), checklist de verificación y problemas frecuentes.
+- Ajustes de memoria del campus (revisado su `instalar-servidor.ps1`, commit del 23/11): `postgresql.conf` solo se escribe al crear la base, pero `httpd.conf` se regenera siempre. Se proponen `ALTER SYSTEM SET shared_buffers = '512MB'` y `effective_cache_size = '2GB'` (se revierten con `ALTER SYSTEM RESET` + reiniciar el servicio) y `FcgidMaxProcesses 8` a mano para probar o con un parámetro `-ProcesosPhp` en su script para que quede fijo. Su modo local (`iniciar.bat`, servidor integrado de PHP) no necesita ajustes.
+- README con un aviso para el equipo del campus; `DESPLIEGUE.md` 5.5 ya no pide llave de despliegue (repo público); CLAUDE.md dice que el repo es público. **No probado en la nube:** la instalación completa en Windows (la nube no tiene Windows ni deja bajar modelos); sigue los mismos pasos que la PC de Alfredo.
+- Pendiente: que Alfredo una el PR a `main` y le pase el enlace a Edward; recoger lo que le falle.
+
 ## 23/11/2026
 
 - **Repo del campus revisado** (`edwarddv05/campus-virtual-cee`, compartido por el Grupo 3): Moodle 5.3 con Apache 2.4 + mod_fcgid + PHP 8.3 y PostgreSQL 18 como servicios de Windows (`C:\CEE-Campus`), puertos 80/443/5432; su versión local usa 8080 y 5433. El Grupo 3 dijo por WhatsApp que Moodle usa 2–3 GB y que Edward coordina el despliegue y los turnos de AnyDesk.

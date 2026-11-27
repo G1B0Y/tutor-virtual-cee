@@ -257,26 +257,16 @@ docker compose version          # debe ser 2.24.4 o más nuevo (docker-compose.c
 
 ### 5.5 Traer el código — Ubuntu
 
-El repo es privado. En la PC del CEE **no uses tu cuenta de GitHub**: usa una **llave de despliegue de solo lectura**.
+El repo es **público** (desde noviembre de 2026): se clona por HTTPS, sin cuenta ni llaves. En la PC del CEE **no uses tu cuenta de GitHub**: para traer cambios basta `git pull`, que no pide credenciales.
 
 ```bash
-ssh-keygen -t ed25519 -C "pc-cee-tutor" -f ~/.ssh/tutor_cee -N ""
-cat ~/.ssh/tutor_cee.pub
-```
-
-En GitHub: repo → *Settings → Deploy keys → Add deploy key*, pega la llave, título "PC CEE", **sin** "Allow write access". Luego:
-
-```bash
-cat >> ~/.ssh/config <<'EOF'
-Host github.com
-  IdentityFile ~/.ssh/tutor_cee
-  IdentitiesOnly yes
-EOF
 sudo mkdir -p /opt/tutor-virtual-cee && sudo chown "$USER": /opt/tutor-virtual-cee
-git clone git@github.com:G1B0Y/tutor-virtual-cee.git /opt/tutor-virtual-cee
+git clone https://github.com/G1B0Y/tutor-virtual-cee.git /opt/tutor-virtual-cee
 cd /opt/tutor-virtual-cee
 git checkout main          # o la etiqueta acordada, p. ej. v1.0-cee
 ```
+
+Si el repo vuelve a ser privado: crea una llave de solo lectura (`ssh-keygen -t ed25519 -C "pc-cee-tutor" -f ~/.ssh/tutor_cee -N ""`), agrégala en *Settings → Deploy keys* **sin** "Allow write access", apúntala en `~/.ssh/config` (`Host github.com` / `IdentityFile ~/.ssh/tutor_cee` / `IdentitiesOnly yes`) y clona con `git@github.com:G1B0Y/tutor-virtual-cee.git`.
 
 El código va en el disco de Linux (`/opt`), **no** en `/mnt/c/...`: en `/mnt/c` Docker es mucho más lento.
 
@@ -606,7 +596,7 @@ fecha,estado,detalle,ram_libre_mb,ip_wsl
 | Base de datos y Ollama expuestos | Sin puertos, en red `internal` (sin salida a internet) | Comprobado en 5.8 y en el checklist |
 | API y su documentación | La API solo en `127.0.0.1:8000`; Nginx devuelve 404 a `/api/docs` y `/api/openapi.json` | — |
 | Consultas pendientes | Protegidas con `X-Clave-CEE` (clave larga del `.env`) | Pasar la clave al responsable del CEE por un canal privado |
-| Credenciales | `.env` con `chmod 600`, fuera de Git; llave de GitHub de solo lectura | Guardar `.env` y las contraseñas en el gestor del equipo, no en un .txt en el escritorio |
+| Credenciales | `.env` con `chmod 600`, fuera de Git; el repo se clona por HTTPS sin credenciales (es público) | Guardar `.env` y las contraseñas en el gestor del equipo, no en un .txt en el escritorio |
 | AnyDesk | Contraseña larga, 2FA, lista de IDs permitidos, última versión | Revisar el historial de sesiones de AnyDesk cada mes |
 | Abuso del chat | Límite por minuto (global en Windows, ver 5.6), cola de 3, preguntas de 2–500 caracteres, cuerpo máx. 16 KB en Nginx | Con la opción B el límite vuelve a ser por alumno |
 | Prompt injection | Prompt con partes separadas, `SIN_EVIDENCIA`, control de respaldo | Incluido en el checklist |
